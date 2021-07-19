@@ -54,7 +54,7 @@ class charge:
             perp_direction1, perp_direction2 = get_perpendicular_vectors(drift_direction)
             
             # get the coordinates for the displacement
-            rho, z = sample_diffused_pdf(sim_parameters["dt"], v_drift)
+            rho, z = sample_diffused_pdf(v_drift)
             phi = sample_azimuthal_pdf()
 
             dx = z*drift_direction + rho*(np.cos(phi)*perp_direction1 + np.sin(phi)*perp_direction2)
@@ -90,14 +90,19 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
     parser.add_argument('-o', '--output', type = str,
+                        default = 'driftHits.npy',
                         help = 'where to save the destinations')
     parser.add_argument('-t', '--transverse', type = float,
+                        default = 0,
                         help = 'amount of transverse (x-direction) drift field to add')
     parser.add_argument('-l', '--longitudinal', type = float,
+                        default = 0,
                         help = 'amount of longitudinal (z-direction) drift field to add')
     parser.add_argument('-N', '--N', type = int,
+                        default = 1e4,
                         help = 'number of photoelectrons to drift')
     parser.add_argument('-z', '--z0', type = float,
+                        default = 50,
                         help = 'nominal distance from cathode to anode')
     args = parser.parse_args()
 
@@ -121,10 +126,7 @@ if __name__ == '__main__':
     initXs = []
     initYs = []
     initZs = []
-    
-    fig3d = plt.figure()
-    ax = fig3d.add_subplot(projection = '3d')
-    
+        
     for i in range(Npe):
         starting_position = sample_from_cathode_target(z0 = args.z0)
         this_charge = charge(starting_position)
@@ -133,8 +135,6 @@ if __name__ == '__main__':
 
         x, y, z = np.array(this_charge.history).T
         
-        ax.plot(x, y, z)
-
         arrivalTimes.append(this_charge.arrivalT)
         finalXs.append(this_charge.pos[0])
         finalYs.append(this_charge.pos[1])
@@ -144,45 +144,9 @@ if __name__ == '__main__':
         initYs.append(this_charge.pos_i[1])
         initZs.append(this_charge.pos_i[2])
 
-        # print ( this_charge.arrivalT )
-
-
-    ax.set_xlabel(r'y (cm)')
-    ax.set_ylabel(r'z (cm)')
-    ax.set_zlabel(r'x (cm)')
     
-    # plt.figure()
-    # plt.hist(arrivalTimes)
-    # print (arrivalTimes)
-    # print (np.min(arrivalTimes),
-    #        np.mean(arrivalTimes),
-    #        np.max(arrivalTimes))
-
     np.save(outFile,
             np.array([finalXs,
                       finalYs,
                       finalZs,
                       arrivalTimes]))
-
-    # exp_wid = np.sqrt(4*physics_parameters["DT"]*np.mean(arrivalTimes))
-    # print ("expected width", exp_wid)
-    # exp_z_wid = 2*np.sqrt(physics_parameters["DL"]*np.mean(arrivalTimes))
-    # print ("expected (timing) width", exp_z_wid)
-    
-    # plt.figure()
-    # plt.hist(np.array(finalXs) - np.array(initXs),
-    #          density = True)
-    # plt.plot(np.linspace(-3e-1, 3.e-1, 1000),
-    #          st.norm.pdf(np.linspace(-3.e-1, 3.e-1, 1000),
-    #                      loc = 0,
-    #                      scale = exp_wid))
-
-    # plt.figure()
-    # print (np.min(finalZs), np.mean(finalZs), np.max(finalZs))
-    # plt.hist(np.array(finalZs),
-    #          density = True)
-    # plt.plot(np.linspace(-3e-1, 3.e-1, 1000),
-    #          st.norm.pdf(np.linspace(-3.e-1, 3.e-1, 1000),
-    #                      loc = 0,
-    #                      scale = exp_z_wid))
-    plt.show()

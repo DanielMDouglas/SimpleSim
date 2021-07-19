@@ -1,9 +1,5 @@
 from utils import *
 
-# def drift_model(E):
-#     # super simple drift model
-#     return 0.153812 # cm / us
-
 def drift_model(E, temperature = 89):
     magE = mag(E)
     
@@ -75,4 +71,6 @@ physics_parameters = {"DT": 8.8e-6,         # transverse diffusion,       cm * c
 sim_parameters = {"dt": 5.e-1}              # time step for integrating the electron's path,   us
 
 detector_parameters = {"cathode position": 50, # distance from cathode to anode,     cm
-                       "target radius": 0.2}   # radius of the cathode target,       cm
+                       "target radius": 0.2,   # radius of the cathode target,       cm
+                       "noise level": 200,     # ENC (electrons)
+                       "nominal field": 0.5}   # nominal field strength,             kV / cm
