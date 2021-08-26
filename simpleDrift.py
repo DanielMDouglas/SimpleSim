@@ -38,7 +38,9 @@ class charge:
         self.fate = None # is the electron still in play?
         self.history = []
         self.arrivalT = 0
-    def drift(self, this_E):
+    def drift(self, this_E, use_bulk = False):
+        ## TODO: add bulk drift method, pass a flag to use bulk vs. brownian drift
+        
         # for each timestep, sample the next position from the bulk drift PDF:
         # n(rho, z, t) = (n0/(4*pi*DT*t*sqrt(4*pi*DL*t)))*exp(-(z - v*t)^2/(4*DL*t) - lambda*v*t)*exp(-rho^2/(4*DT*t))
         #
@@ -69,6 +71,30 @@ class charge:
             if self.pos[2] <= 0:
                 self.fate = 1 # fate of 1 means the electron made it to the anode
 
+class tracklet:
+    def __init__(self, thisSouce = 'Cs'):
+        self.pos = draw_from_cathod_target() # z of the cathode, x, y, sampled within source shape
+        self.dir = draw_from_one_sided_uniform() # az is flat in [0, 2pi], zenith is cos(zen) in [0, -pi/2]
+        
+        Ei = draw_from_emission_spectrum(thisSource)
+        
+        length = betaRange(Ei)
+
+        # dEdx = betadEdx(Ei)
+        dEdx = Ei/length
+
+        # dQdx = recomb(dEdx)
+        Qtot = Ei*physics_parameters["w"]*physics_parameters["R"]
+        dQdx = physics_parameters["R"]*dEdx*physics_parameters["w"]
+        
+    def generate_charge(self):
+
+        dist = st.uniform.rvs(0, length)
+
+        thisPos = self.pos + self.dir*dist
+        
+        yield charge(thisPos)
+        
 def sample_from_cathode_target(z0 = 50):
     # TODO
     # get a random position on the cathode target (8mm diameter on the cathode plane)
@@ -99,7 +125,7 @@ if __name__ == '__main__':
                         default = 0,
                         help = 'amount of longitudinal (z-direction) drift field to add')
     parser.add_argument('-N', '--N', type = int,
-                        default = 1e4,
+                        default = int(1e4),
                         help = 'number of photoelectrons to drift')
     parser.add_argument('-z', '--z0', type = float,
                         default = 50,
@@ -126,13 +152,19 @@ if __name__ == '__main__':
     initXs = []
     initYs = []
     initZs = []
+
+    thisTracklet = tracklet()
+    nChargeBundles = thisTracklet.Qtot/scalingF
+    # for i in range(Npe):
+    for i in range(nChargeBundles):
+
+        this_charge = thisTracklet.generate_charge()
         
-    for i in range(Npe):
-        starting_position = sample_from_cathode_target(z0 = args.z0)
-        this_charge = charge(starting_position)
+        # starting_position = sample_from_cathode_target(z0 = args.z0)
+        # this_charge = charge(starting_position)
 
         this_charge.drift(thisEfield)
-
+        
         x, y, z = np.array(this_charge.history).T
         
         arrivalTimes.append(this_charge.arrivalT)
@@ -144,7 +176,7 @@ if __name__ == '__main__':
         initYs.append(this_charge.pos_i[1])
         initZs.append(this_charge.pos_i[2])
 
-    
+        print ("charge ", i, " terminates at ", this_charge.pos)
     np.save(outFile,
             np.array([finalXs,
                       finalYs,

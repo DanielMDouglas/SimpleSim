@@ -60,17 +60,34 @@ def drift_model(E, temperature = 89):
 
     return vd; # cm/us
 
-
+def betadEdx(E):
+    # do a thing return dEdx
+    #
+    pass
+    
+def betaRange(E):
+    """ this function returns a length of a tracklet from a given initial E """
+    # read file
+    # interpolate
+    # return range
+    pass
+    
+# need to add recombination and work
 physics_parameters = {"DT": 8.8e-6,         # transverse diffusion,       cm * cm / us
                       "DL": 4.0e-6,         # longitudinal diffusion,     cm * cm / us
                       "v":  drift_model,    # drift velocity (function),  cm / us
                       "lt": 10.e3,          # lifetime,                   us
                       "npe": 100,           # number of photoelectrons
-                      "npe_sigma": 10}      # error on number of pe
+                      "npe_sigma": 10,      # error on number of pe
+                      "dEdx": betadEdx,
+                      "R": 0.66,            # recombination factor
+                      "w": 23.6e-6}         # ionization w.f. MeV
                       
-sim_parameters = {"dt": 5.e-1}              # time step for integrating the electron's path,   us
+sim_parameters = {"dt": 5.e-1,              # time step for integrating the electron's path,   us
+                  "scalingF": 1000}         # electrons per charge bundle
 
 detector_parameters = {"cathode position": 50, # distance from cathode to anode,     cm
                        "target radius": 0.2,   # radius of the cathode target,       cm
                        "noise level": 200,     # ENC (electrons)
-                       "nominal field": 0.5}   # nominal field strength,             kV / cm
+                       "nominal field": 0.5,   # nominal field strength,             kV / cm
+                       "pixel threshold": 1 }  # threshold for pixel hit ,           # e-
