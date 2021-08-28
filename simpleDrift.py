@@ -7,6 +7,10 @@ from parameters import *
 from utils import *
     
 def sample_diffused_pdf(v):
+    """
+    get the length of the step in the axial (z) and radial (rho) directions.
+    These directions are defined in terms of the local E field
+    """
     # get a random step (in rho & z) 
     DT = physics_parameters["DT"]
     DL = physics_parameters["DL"]
@@ -18,6 +22,10 @@ def sample_diffused_pdf(v):
     return rho, z
 
 def sample_azimuthal_pdf():
+    """
+    get the azimuthal (where the axial is the drift direction) direction for a drift step.
+    There is no preferred direction, so the distribution is flat
+    """
     theta = st.uniform.rvs(scale = 2*np.pi)
     return theta
 
@@ -28,7 +36,7 @@ class Efield:
         self.transv = transv
         self.longit = longit
     def value(self, pos):
-        return np.array([self.transv, 0., 0.5 + self.longit]) # nominal = 0.5 kV/cm
+        return np.array([self.transv, 0., detector_parameters['nominal field'] + self.longit])
         
 class charge:
     def __init__(self, pos_i):
@@ -69,37 +77,41 @@ class charge:
             
             # check for the particle to finish
             if self.pos[2] <= 0:
-                self.fate = 1 # fate of 1 means the electron made it to the anode
+                self.fate = 1 # fate == 1 means the electron made it to the anode
 
 class tracklet:
-    def __init__(self, thisSouce = 'Cs'):
-        self.pos = draw_from_cathod_target() # z of the cathode, x, y, sampled within source shape
-        self.dir = draw_from_one_sided_uniform() # az is flat in [0, 2pi], zenith is cos(zen) in [0, -pi/2]
+    def __init__(self, thisSource = 'Cs137'):
+        self.pos = sample_from_cathode_target() # z of the cathode, x, y, sampled within source shape
+        self.dir = sample_from_hemisphere() # az is flat in [0, 2pi], zenith is cos(zen) in [0, -pi/2]
+
+        self.Ei = emission_spectrum(thisSource) # Initial energy [MeV]
         
-        Ei = draw_from_emission_spectrum(thisSource)
-        
-        length = betaRange(Ei)
+        self.length = betaRange(self.Ei) # track length [cm]
 
         # dEdx = betadEdx(Ei)
-        dEdx = Ei/length
+        self.dEdx = self.Ei/self.length # deposited energy density [MeV/cm]
 
         # dQdx = recomb(dEdx)
-        Qtot = Ei*physics_parameters["w"]*physics_parameters["R"]
-        dQdx = physics_parameters["R"]*dEdx*physics_parameters["w"]
-        
-    def generate_charge(self):
+        self.Qtot = self.Ei*physics_parameters["R"]/physics_parameters["w"] # total ionized charge [e]
+        self.dQdx = self.dEdx*physics_parameters["R"]/physics_parameters["w"] # ioniization density [e/cm]
 
-        dist = st.uniform.rvs(0, length)
+        print(self.Ei, self.length, self.dEdx, self.Qtot, self.dQdx)
+
+    def generate_charge(self):
+        """
+        from the tracklet shape defined in the initializer, generate a charge
+        """
+        dist = st.uniform.rvs(0, self.length)
 
         thisPos = self.pos + self.dir*dist
         
-        yield charge(thisPos)
+        return charge(thisPos)
         
-def sample_from_cathode_target(z0 = 50):
-    # TODO
-    # get a random position on the cathode target (8mm diameter on the cathode plane)
-    # z = detector_parameters["cathode position"]
-    z = z0
+def sample_from_cathode_target():
+    """ 
+    get a random position on the cathode target (8mm diameter on the cathode plane)
+    """
+    z = detector_parameters["cathode position"]
     R = detector_parameters["target radius"]
 
     rho = np.power(st.uniform.rvs()*np.power(R, 2), 0.5)
@@ -110,6 +122,20 @@ def sample_from_cathode_target(z0 = 50):
 
     pos = np.array([x, y, z])
     return pos
+
+def sample_from_hemisphere():
+    """
+    return a random unit vector where the z component is negative
+    """
+    az = 2*np.pi*st.uniform.rvs() # the distribution of azimuthal angles is flat
+    pol = np.arccos(-st.uniform.rvs()) # the distribution of polar angles is weighted for even coverage per solid angle
+
+    x = np.cos(az)*np.sin(pol)
+    y = np.sin(az)*np.sin(pol)
+    z = np.cos(pol)
+
+    return np.array([x, y, z])
+    
 
 if __name__ == '__main__':
     import argparse
@@ -154,12 +180,15 @@ if __name__ == '__main__':
     initZs = []
 
     thisTracklet = tracklet()
-    nChargeBundles = thisTracklet.Qtot/scalingF
+    nChargeBundles = int(thisTracklet.Qtot/sim_parameters["scalingF"])
     # for i in range(Npe):
+    print ("drifting ", nChargeBundles, " discrete charge bundles")
     for i in range(nChargeBundles):
-
-        this_charge = thisTracklet.generate_charge()
         
+        this_charge = thisTracklet.generate_charge()
+
+        print ("charge ", i, " originates at ", this_charge.pos)
+
         # starting_position = sample_from_cathode_target(z0 = args.z0)
         # this_charge = charge(starting_position)
 
@@ -177,6 +206,7 @@ if __name__ == '__main__':
         initZs.append(this_charge.pos_i[2])
 
         print ("charge ", i, " terminates at ", this_charge.pos)
+
     np.save(outFile,
             np.array([finalXs,
                       finalYs,

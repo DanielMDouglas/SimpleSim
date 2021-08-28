@@ -63,14 +63,20 @@ def drift_model(E, temperature = 89):
 def betadEdx(E):
     # do a thing return dEdx
     #
-    pass
+    return 1 # cm
     
 def betaRange(E):
     """ this function returns a length of a tracklet from a given initial E """
     # read file
     # interpolate
     # return range
-    pass
+    return 10 # cm
+
+def emission_spectrum(thisSource = 'Cs137'):
+    if thisSource == 'Cs137':
+        return 0.512 # [MeV]
+    else:
+        raise Exception ("This is not a valid source!")
     
 # need to add recombination and work
 physics_parameters = {"DT": 8.8e-6,         # transverse diffusion,       cm * cm / us
@@ -84,7 +90,7 @@ physics_parameters = {"DT": 8.8e-6,         # transverse diffusion,       cm * c
                       "w": 23.6e-6}         # ionization w.f. MeV
                       
 sim_parameters = {"dt": 5.e-1,              # time step for integrating the electron's path,   us
-                  "scalingF": 1000}         # electrons per charge bundle
+                  "scalingF": 100}         # electrons per charge bundle
 
 detector_parameters = {"cathode position": 50, # distance from cathode to anode,     cm
                        "target radius": 0.2,   # radius of the cathode target,       cm

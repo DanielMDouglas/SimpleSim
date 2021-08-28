@@ -20,12 +20,13 @@ tBins = 0.2*np.arange(2000)
 
 class pixel:
     def __init__(self, arrivalTimes):
+        boundaries = []
         bins, self.binnedT = np.histogram(arrivalTimes, bins = tBins)
         # self.binnedT *= sim_parameters["scalingF"]
         self.arrivalTimes = arrivalTimes
     def find_hits(self):
         accumulatedCharge = np.cumsum(self.arrivalTimes)
-        hitTime = np.interpolate(detector 
+        hitTime = np.interpolate(detector)
 
 if __name__ == '__main__':
     import argparse
@@ -39,6 +40,7 @@ if __name__ == '__main__':
     finalLocs = np.load(args.input)
 
     x, y, z, t = finalLocs
+                                 
 
     counts, xBinEdges, yBinEdges = np.histogram2d(x, y, bins = [xBins, yBins])
 
