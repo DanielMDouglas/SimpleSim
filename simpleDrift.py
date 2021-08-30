@@ -38,7 +38,6 @@ def sample_from_cathode_target():
 
     rho = np.power(st.uniform.rvs()*np.power(R, 2), 0.5)
     phi = st.uniform.rvs(scale = 2*np.pi)
-    
     x = rho*np.cos(phi)
     y = rho*np.sin(phi) 
 

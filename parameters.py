@@ -96,4 +96,4 @@ detector_parameters = {"cathode position": 50, # distance from cathode to anode,
                        "target radius": 0.2,   # radius of the cathode target,       cm
                        "noise level": 200,     # ENC (electrons)
                        "nominal field": 0.5,   # nominal field strength,             kV / cm
-                       "pixel threshold": 1 }  # threshold for pixel hit ,           # e-
+                       "pixel threshold": 4e2 }  # threshold for pixel hit ,           # e-
