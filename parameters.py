@@ -21,7 +21,7 @@ class eStarCalc:
     def betadEdx(self, E):
         return np.interp(E, self.KE, self.tot_SP)/lArDens
 
-eStarArProp = eStarCalc('eStar_Ar.pl')
+eStarArProp = eStarCalc('eStar_Ar.dat')
 
 def drift_model(E, temperature = 89):
     magE = mag(E)
