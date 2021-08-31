@@ -182,10 +182,6 @@ if __name__ == '__main__':
     initYs = []
     initZs = []
 
-    allowedGens = ['tracklet', 'point']
-    if not args.generator in allowedGens:
-        raise ValueError ("the specified generator is not a recognized option!") 
-
     if args.generator == 'tracklet':
         thisTracklet = tracklet()
         nChargeBundles = int(thisTracklet.Qtot/sim_parameters["scalingF"])
@@ -193,14 +189,20 @@ if __name__ == '__main__':
     elif args.generator == 'point':
         nChargeBundles = args.N
         charges = [charge([0, 0, detector_parameters["cathode position"]]) for i in range(nChargeBundles)]
-    
+    elif args.generator == 'disc':
+        nChargeBundles = args.N
+        charges = [charge(sample_from_cathode_target()) for i in range(nChargeBundles)]
+    else:
+        raise ValueError ("the specified generator is not a recognized option!") 
+
+        
     # for i in range(Npe):
     if args.verbose:
-        print ("drifting ", nChargeBundles, " discrete charge bundles")
+        print ("drifting " + str(nChargeBundles) + " discrete charge bundles")
     for i, this_charge in enumerate(charges):
         
         if args.verbose:
-            print ("charge ", i, " originates at ", this_charge.pos)
+            print ("charge " + str(i) + " originates at " + str(this_charge.pos))
 
         # starting_position = sample_from_cathode_target(z0 = args.z0)
         # this_charge = charge(starting_position)
@@ -219,8 +221,8 @@ if __name__ == '__main__':
         initZs.append(this_charge.pos_i[2])
 
         if args.verbose:
-            print ("charge ", i, " terminates at ", this_charge.pos)
-
+            print ("charge " + str(i) + " terminates at " + str(this_charge.pos))
+            
     np.save(outFile,
             np.array([finalXs,
                       finalYs,
