@@ -69,8 +69,8 @@ class Efield:
 class charge:
     def __init__(self, pos_i):
         # TODO
-        self.pos_i = pos_i # store initial position
-        self.pos = pos_i # position vector which changes over time
+        self.pos_i = np.array(pos_i) # store initial position
+        self.pos = np.array(pos_i) # position vector which changes over time
         self.fate = None # is the electron still in play?
         self.history = []
         self.arrivalT = 0
@@ -123,8 +123,6 @@ class tracklet:
         self.Qtot = self.Ei*physics_parameters["R"]/physics_parameters["w"] # total ionized charge [e]
         self.dQdx = self.dEdx*physics_parameters["R"]/physics_parameters["w"] # ioniization density [e/cm]
 
-        print(self.Ei, self.length, self.dEdx, self.Qtot, self.dQdx)
-
     def generate_charge(self):
         """
         from the tracklet shape defined in the initializer, generate a charge
@@ -150,11 +148,17 @@ if __name__ == '__main__':
                         default = 0,
                         help = 'amount of longitudinal (z-direction) drift field to add')
     parser.add_argument('-N', '--N', type = int,
-                        default = int(1e4),
+                        default = int(1e2),
                         help = 'number of photoelectrons to drift')
     parser.add_argument('-z', '--z0', type = float,
                         default = 50,
                         help = 'nominal distance from cathode to anode')
+    parser.add_argument('-g', '--generator', type = str,
+                        default = 'tracklet',
+                        help = 'the generator to use for building charge clouds')
+    parser.add_argument('-v', '--verbose', action = 'store_true',
+                        help = 'set verbosity')
+    
     args = parser.parse_args()
 
     outFile = args.output
@@ -178,15 +182,25 @@ if __name__ == '__main__':
     initYs = []
     initZs = []
 
-    thisTracklet = tracklet()
-    nChargeBundles = int(thisTracklet.Qtot/sim_parameters["scalingF"])
-    # for i in range(Npe):
-    print ("drifting ", nChargeBundles, " discrete charge bundles")
-    for i in range(nChargeBundles):
-        
-        this_charge = thisTracklet.generate_charge()
+    allowedGens = ['tracklet', 'point']
+    if not args.generator in allowedGens:
+        raise ValueError ("the specified generator is not a recognized option!") 
 
-        print ("charge ", i, " originates at ", this_charge.pos)
+    if args.generator == 'tracklet':
+        thisTracklet = tracklet()
+        nChargeBundles = int(thisTracklet.Qtot/sim_parameters["scalingF"])
+        charges = [thisTracklet.generate_charge() for i in range(nChargeBundles)]
+    elif args.generator == 'point':
+        nChargeBundles = args.N
+        charges = [charge([0, 0, detector_parameters["cathode position"]]) for i in range(nChargeBundles)]
+    
+    # for i in range(Npe):
+    if args.verbose:
+        print ("drifting ", nChargeBundles, " discrete charge bundles")
+    for i, this_charge in enumerate(charges):
+        
+        if args.verbose:
+            print ("charge ", i, " originates at ", this_charge.pos)
 
         # starting_position = sample_from_cathode_target(z0 = args.z0)
         # this_charge = charge(starting_position)
@@ -204,7 +218,8 @@ if __name__ == '__main__':
         initYs.append(this_charge.pos_i[1])
         initZs.append(this_charge.pos_i[2])
 
-        print ("charge ", i, " terminates at ", this_charge.pos)
+        if args.verbose:
+            print ("charge ", i, " terminates at ", this_charge.pos)
 
     np.save(outFile,
             np.array([finalXs,
