@@ -114,7 +114,7 @@ class tracklet:
 
         self.Ei = emission_spectrum(thisSource) # Initial energy [MeV]
         
-        self.length = betaRange(self.Ei) # track length [cm]
+        self.length = physics_parameters["e-Ar range"](self.Ei) # track length [cm]
 
         # dEdx = betadEdx(Ei)
         self.dEdx = self.Ei/self.length # deposited energy density [MeV/cm]

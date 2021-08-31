@@ -1,5 +1,28 @@
 from utils import *
 
+lArDens = 1.3982 # g/cm^3
+
+class eStarCalc:
+    def __init__(self, filename):
+        self.filename = filename
+        data = np.loadtxt(self.filename, skiprows = 7).T
+
+        self.KE = data[0]
+        self.coll_SP = data[1]
+        self.rad_SP = data[2]
+        self.tot_SP = data[3]
+        self.range = data[4]
+        self.rad_yield = data[5]
+        self.d_eff = data[6]
+
+    def betaRange(self, E):
+        return np.interp(E, self.KE, self.range)/lArDens
+
+    def betadEdx(self, E):
+        return np.interp(E, self.KE, self.tot_SP)/lArDens
+
+eStarArProp = eStarCalc('eStar_Ar.pl')
+
 def drift_model(E, temperature = 89):
     magE = mag(E)
     
@@ -67,6 +90,7 @@ def betadEdx(E):
     
 def betaRange(E):
     """ this function returns a length of a tracklet from a given initial E """
+    
     # read file
     # interpolate
     # return range
@@ -79,21 +103,24 @@ def emission_spectrum(thisSource = 'Cs137'):
         raise Exception ("This is not a valid source!")
     
 # need to add recombination and work
-physics_parameters = {"DT": 8.8e-6,         # transverse diffusion,       cm * cm / us
-                      "DL": 4.0e-6,         # longitudinal diffusion,     cm * cm / us
-                      "v":  drift_model,    # drift velocity (function),  cm / us
-                      "lt": 10.e3,          # lifetime,                   us
-                      "npe": 100,           # number of photoelectrons
-                      "npe_sigma": 10,      # error on number of pe
-                      "dEdx": betadEdx,
-                      "R": 0.66,            # recombination factor
-                      "w": 23.6e-6}         # ionization w.f. MeV
+physics_parameters = {"DT": 8.8e-6,                          # transverse diffusion,                 cm * cm / us
+                      "DL": 4.0e-6,                          # longitudinal diffusion,               cm * cm / us
+                      "v":  drift_model,                     # drift velocity (function),            cm / us
+                      "lt": 10.e3,                           # lifetime,                             us
+                      "npe": 100,                            # number of photoelectrons
+                      "npe_sigma": 10,                       # error on number of pe
+                      "R": 0.66,                             # recombination factor
+                      "w": 23.6e-6,                          # ionization w.f.,                      MeV
+                      "e-Ar range": eStarArProp.betaRange,   # range of beta- in Ar,                 cm
+                      "e-Ar dEdx": eStarArProp.betadEdx,     # total stopping power of beta- in Ar,  MeV/cm 
+                      "lAr density": lArDens}                # density of liquid Argon (@ B.P.),     g/cm^3
+                      
                       
 sim_parameters = {"dt": 5.e-1,              # time step for integrating the electron's path,   us
-                  "scalingF": 100}         # electrons per charge bundle
+                  "scalingF": 100}          # electrons per charge bundle
 
-detector_parameters = {"cathode position": 50, # distance from cathode to anode,     cm
-                       "target radius": 0.2,   # radius of the cathode target,       cm
-                       "noise level": 200,     # ENC (electrons)
-                       "nominal field": 0.5,   # nominal field strength,             kV / cm
+detector_parameters = {"cathode position": 50,   # distance from cathode to anode,     cm
+                       "target radius": 0.2,     # radius of the cathode target,       cm
+                       "noise level": 200,       # ENC (electrons)
+                       "nominal field": 0.5,     # nominal field strength,             kV / cm
                        "pixel threshold": 4e2 }  # threshold for pixel hit ,           # e-
