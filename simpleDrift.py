@@ -17,9 +17,11 @@ def sample_diffused_pdf(v):
 
     dt = sim_parameters["dt"]
 
-    rho = st.norm.rvs(scale = np.sqrt(2*8*DL*dt))
-    z = st.norm.rvs(loc = v*dt, scale = np.sqrt(2*8*DT*dt))
-    return rho, z
+    # rho = st.norm.rvs(scale = np.sqrt(2*8*DL*dt))
+    x = st.norm.rvs(scale = np.sqrt(4*DT*dt))
+    y = st.norm.rvs(scale = np.sqrt(4*DT*dt))
+    z = st.norm.rvs(loc = v*dt, scale = np.sqrt(4*DL*dt))
+    return x, y, z
 
 def sample_azimuthal_pdf():
     """
@@ -92,14 +94,14 @@ class charge:
             perp_direction1, perp_direction2 = get_perpendicular_vectors(drift_direction)
             
             # get the coordinates for the displacement
-            rho, z = sample_diffused_pdf(v_drift)
+            dx, dy, dz = sample_diffused_pdf(v_drift)
             phi = sample_azimuthal_pdf()
 
-            dx = z*drift_direction + rho*(np.cos(phi)*perp_direction1 + np.sin(phi)*perp_direction2)
+            dl = dz*drift_direction + dx*perp_direction1 + dy*perp_direction2
             
             self.history.append(self.pos)
 
-            self.pos = self.pos + dx
+            self.pos = self.pos + dl
 
             self.arrivalT += sim_parameters["dt"]
             
