@@ -76,7 +76,7 @@ class charge:
         self.fate = None # is the electron still in play?
         self.history = []
         self.arrivalT = 0
-    def drift(self, this_E, use_bulk = False):
+    def drift(self, this_E, drift_model = 'randomWalk'):
         ## TODO: add bulk drift method, pass a flag to use bulk vs. brownian drift
         
         # for each timestep, sample the next position from the bulk drift PDF:
@@ -85,29 +85,59 @@ class charge:
         # z is drift direction (direction of E field)
         #
         # repeat until z position is at the cathode
-        while self.fate == None:
+        if drift_model == 'bulk':
+            # a simplified drift model that runs in a single step
+            # assumes the field is constant everywhere
+            # and the angle of deflection is not too great
+
+            self.history.append(self.pos)
+
             localEfield = this_E.value(self.pos)
 
             v_drift = physics_parameters["v"](localEfield)
-
-            drift_direction = -norm(localEfield)
-            perp_direction1, perp_direction2 = get_perpendicular_vectors(drift_direction)
+            v = mag(v_drift)
             
-            # get the coordinates for the displacement
-            dx, dy, dz = sample_diffused_pdf(v_drift)
-            phi = sample_azimuthal_pdf()
+            t0 = self.pos[2]/v
 
-            dl = dz*drift_direction + dx*perp_direction1 + dy*perp_direction2
-            
+            x = st.norm.rvs(loc = self.pos[0], scale = np.sqrt(4*physics_parameters["DT"]*t0))
+            y = st.norm.rvs(loc = self.pos[1], scale = np.sqrt(4*physics_parameters["DT"]*t0))
+            z = 0
+            t = st.norm.rvs(loc = t0, scale = np.sqrt(4*physics_parameters["DL"]*t0)/v)
+
+            self.pos = np.array([x, y, z])
             self.history.append(self.pos)
+            self.arrivalT = t
 
-            self.pos = self.pos + dl
+            self.fate = 1
 
-            self.arrivalT += sim_parameters["dt"]
+        elif drift_model == 'randomWalk':
+            while self.fate == None:
+                localEfield = this_E.value(self.pos)
+
+                v_drift = physics_parameters["v"](localEfield)
+
+                drift_direction = -norm(localEfield)
+                perp_direction1, perp_direction2 = get_perpendicular_vectors(drift_direction)
             
-            # check for the particle to finish
-            if self.pos[2] <= 0:
-                self.fate = 1 # fate == 1 means the electron made it to the anode
+                # get the coordinates for the displacement
+                dx, dy, dz = sample_diffused_pdf(v_drift)
+                phi = sample_azimuthal_pdf()
+
+                dl = dz*drift_direction + dx*perp_direction1 + dy*perp_direction2
+                
+                self.history.append(self.pos)
+
+                self.pos = self.pos + dl
+
+                self.arrivalT += sim_parameters["dt"]
+            
+                # check for the particle to finish
+                if self.pos[2] <= 0:
+                    self.fate = 1 # fate == 1 means the electron made it to the anode
+
+        else:
+            raise ValueError (drift_model + " is not a valid drift model!")
+        
 
 class tracklet:
     def __init__(self, thisSource = 'Cs137'):
@@ -158,6 +188,9 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--generator', type = str,
                         default = 'tracklet',
                         help = 'the generator to use for building charge clouds')
+    parser.add_argument('-d', '--drift', type = str,
+                        default = 'randomWalk',
+                        help = 'which drift model to use')
     parser.add_argument('-v', '--verbose', action = 'store_true',
                         help = 'set verbosity')
     
@@ -209,7 +242,7 @@ if __name__ == '__main__':
         # starting_position = sample_from_cathode_target(z0 = args.z0)
         # this_charge = charge(starting_position)
 
-        this_charge.drift(thisEfield)
+        this_charge.drift(thisEfield, args.drift)
         
         x, y, z = np.array(this_charge.history).T
         
