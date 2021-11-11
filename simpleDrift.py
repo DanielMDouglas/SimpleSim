@@ -58,6 +58,25 @@ def sample_from_hemisphere():
     z = np.cos(pol)
 
     return np.array([x, y, z])
+
+def sample_from_bounding_sphere():
+    """
+    return a random position on a sphere that 
+    """
+    az = 2*np.pi*st.uniform.rvs() # the distribution of azimuthal angles is flat
+    pol = np.arccos(1 - 2*st.uniform.rvs()) # the distribution of polar angles is weighted for even coverage per solid angle
+    r = sim_parameters["generation sphere radius"]
+    
+    x = r*np.cos(az)*np.sin(pol)
+    y = r*np.sin(az)*np.sin(pol)
+    z = r*np.cos(pol)
+
+    return np.array([x, y, z])
+
+atm_spect = np.loadtxt('atm_flux.dat')
+def sample_from_CR_spectrum():
+    ind = np.random.choice(atm_spect.shape[0])
+    return atm_spect[ind]
     
 class Efield:
     def __init__(self, transv, longit):
@@ -137,22 +156,41 @@ class charge:
 
         else:
             raise ValueError (drift_model + " is not a valid drift model!")
-        
 
-class tracklet:
-    def __init__(self, thisSource = 'Cs137'):
-        self.pos = sample_from_cathode_target() # z of the cathode, x, y, sampled within source shape
-        self.dir = sample_from_hemisphere() # az is flat in [0, 2pi], zenith is cos(zen) in [0, -pi/2]
-
-        self.Ei = emission_spectrum(thisSource) # Initial energy [MeV]
+class radSource:
+    def __init__(self, thisSource = 'Cs137'):        
+        self.source = thisSource
         
-        self.length = physics_parameters["e-Ar range"](self.Ei) # track length [cm]
+    def generate_tracklet(self):
+        pos = sample_from_cathode_target() # z of the cathode, x, y, sampled within source shape
+        dir = sample_from_hemisphere() # az is flat in [0, 2pi], zenith is cos(zen) in [0, -pi/2]
+        Ei = emission_spectrum(self.source) # Initial energy [MeV]
+
+        length = physics_parameters["e-Ar range"](Ei) # track length [cm]
 
         # dEdx = betadEdx(Ei)
-        self.dEdx = self.Ei/self.length # deposited energy density [MeV/cm]
+        dEdx = Ei/length # deposited energy density [MeV/cm]
 
         # dQdx = recomb(dEdx)
-        self.Qtot = self.Ei*physics_parameters["R"]/physics_parameters["w"] # total ionized charge [e]
+        Qtot = Ei*physics_parameters["R"]/physics_parameters["w"] # total ionized charge [e]
+        dQdx = dEdx*physics_parameters["R"]/physics_parameters["w"] # ioniization density [e/cm]
+        
+        return tracklet(pos, dir, Ei, length)
+
+class tracklet:
+    def __init__(self, pos, dir, edep, length):
+        self.pos = pos
+        self.dir = dir
+
+        self.edep = edep
+        
+        self.length = length
+
+        # dEdx = betadEdx(Ei)
+        self.dEdx = self.edep/self.length # deposited energy density [MeV/cm]
+
+        # dQdx = recomb(dEdx)
+        self.Qtot = self.edep*physics_parameters["R"]/physics_parameters["w"] # total ionized charge [e]
         self.dQdx = self.dEdx*physics_parameters["R"]/physics_parameters["w"] # ioniization density [e/cm]
 
     def generate_charge(self):
@@ -164,6 +202,45 @@ class tracklet:
         thisPos = self.pos + self.dir*dist
         
         return charge(thisPos)
+        
+class cosmicRayTrack:
+    def __init__(self):
+        # self.pos = sample_from_bounding_sphere()
+        # self.Ei, self.zen = sample_from_CR_spectrum()
+        self.pos = sample_from_bounding_sphere()
+        self.Ei, zen = sample_from_CR_spectrum()
+        az = 2*np.pi*st.uniform.rvs()
+        self.dir = np.array([np.cos(az)*np.sin(zen),
+                             np.sin(az)*np.sin(zen),
+                             np.cos(zen)])
+        
+        self.length = physics_parameters["mu-Ar range"](self.Ei) # track length [cm]
+
+        # dEdx = betadEdx(Ei)
+        self.dEdx = self.Ei/self.length # deposited energy density [MeV/cm]
+
+        # dQdx = recomb(dEdx)
+        self.Qtot = self.Ei*physics_parameters["R"]/physics_parameters["w"] # total ionized charge [e]
+        self.dQdx = self.dEdx*physics_parameters["R"]/physics_parameters["w"] # ioniization density [e/cm]
+
+    def generate_segments(self):
+        """
+        from the track shape defined in the initializer, generate a charge
+        """
+
+        segment_length = sim_parameters['dx']
+        nSegments = int(self.length/segment_length)
+        
+        trackletList = []
+
+        for i in range(nSegments):
+            pos = self.pos + self.dir*i*segment_length
+            dir = self.dir
+            edep = 1
+            
+            trackletList.append(tracklet(pos, dir, edep, segment_length))
+        
+        return trackletList
         
 
 if __name__ == '__main__':
@@ -186,7 +263,7 @@ if __name__ == '__main__':
                         default = 50,
                         help = 'nominal distance from cathode to anode')
     parser.add_argument('-g', '--generator', type = str,
-                        default = 'tracklet',
+                        default = 'radSource',
                         help = 'the generator to use for building charge clouds')
     parser.add_argument('-d', '--drift', type = str,
                         default = 'randomWalk',
@@ -217,16 +294,29 @@ if __name__ == '__main__':
     initYs = []
     initZs = []
 
-    if args.generator == 'tracklet':
-        thisTracklet = tracklet()
+    if args.generator == 'radSource':
+        thisSource = radSource()
+        thisTracklet = thisSource.generate_tracklet()
         nChargeBundles = int(thisTracklet.Qtot/sim_parameters["scalingF"])
         charges = [thisTracklet.generate_charge() for i in range(nChargeBundles)]
+
+    elif args.generator == 'muon':
+        thisTrack = cosmicRayTrack()
+        theseTracklets = thisTrack.generate_segments()
+        charges = []
+        for thisTracklet in theseTracklets:
+            nChargeBundles = int(thisTracklet.Qtot/sim_parameters["scalingF"])
+            for i in range(nChargeBundles):
+                charges.append(thisTracklet.generate_charge())
+
     elif args.generator == 'point':
         nChargeBundles = args.N
         charges = [charge([0, 0, detector_parameters["cathode position"]]) for i in range(nChargeBundles)]
+
     elif args.generator == 'disc':
         nChargeBundles = args.N
         charges = [charge(sample_from_cathode_target()) for i in range(nChargeBundles)]
+
     else:
         raise ValueError ("the specified generator is not a recognized option!") 
 
@@ -263,3 +353,9 @@ if __name__ == '__main__':
                       finalYs,
                       finalZs,
                       arrivalTimes]))
+
+    # np.save(outFile,
+    #         np.array([initXs,
+    #                   initYs,
+    #                   initZs,
+    #                   arrivalTimes]))

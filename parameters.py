@@ -23,6 +23,32 @@ class eStarCalc:
 
 eStarArProp = eStarCalc('eStar_Ar.dat')
 
+class bnlData:
+    def __init__(self, filename):
+        self.filename = filename
+        data = np.loadtxt(self.filename, skiprows = 1).T
+
+        self.KE = data[0]*1.e3
+        self.dEdx = data[1]
+
+        Erange = []
+        self.Eresid = np.linspace(0, 10000, 1000)
+        dE = self.Eresid[1] - self.Eresid[0]
+        self.range = []
+        l = 0
+        
+        for Ei in self.Eresid:
+            self.range.append(l)
+            l += np.power(np.interp(Ei, self.KE, self.dEdx), -1)*dE
+        
+    def mudEdx(self, E):
+        return np.interp(E, self.KE, self.dEdx)
+
+    def muRange(self, E):
+        return np.interp(E, self.Eresid, self.range)
+
+bnlArProp = bnlData('mu-Ar_SP.dat')
+
 def drift_model(E, temperature = 89):
     magE = mag(E)
     
@@ -101,6 +127,14 @@ def emission_spectrum(thisSource = 'Cs137'):
         return 0.512 # [MeV]
     else:
         raise Exception ("This is not a valid source!")
+
+def muonArgon_dEdx(E):
+    """
+    returns an array containing the stopping power of a muon in argon
+    over the course of a track.
+    The length of the array is the range/dx
+    """
+    return None
     
 # need to add recombination and work
 physics_parameters = {"DT": 8.8e-6,                          # transverse diffusion,                 cm * cm / us
@@ -112,12 +146,16 @@ physics_parameters = {"DT": 8.8e-6,                          # transverse diffus
                       "R": 0.66,                             # recombination factor
                       "w": 23.6e-6,                          # ionization w.f.,                      MeV
                       "e-Ar range": eStarArProp.betaRange,   # range of beta- in Ar,                 cm
-                      "e-Ar dEdx": eStarArProp.betadEdx,     # total stopping power of beta- in Ar,  MeV/cm 
+                      "e-Ar dEdx": eStarArProp.betadEdx,     # total stopping power of beta- in Ar,  MeV/cm
+                      "mu-Ar dEdx": bnlArProp.mudEdx,        # stopping power of muon in Ar,         MeV/cm
+                      "mu-Ar range": bnlArProp.muRange,      # rang of muon in Ar,                   cm
                       "lAr density": lArDens}                # density of liquid Argon (@ B.P.),     g/cm^3
-                      
-                      
-sim_parameters = {"dt": 5.e-1,              # time step for integrating the electron's path,   us
-                  "scalingF": 100}          # electrons per charge bundle
+
+
+sim_parameters = {"dt": 5.e-1,                      # time step for integrating the electron's path,        us
+                  "dx": 1.e-1,                      # spatial discretization for tracks (the dx in dEdx),   cm
+                  "scalingF": 100,                  # electrons per charge bundle
+                  "generation sphere radius": 50.}  # radius of the sphere on which muons are generated,    cm
 
 detector_parameters = {"cathode position": 50,   # distance from cathode to anode,     cm
                        "target radius": 0.2,     # radius of the cathode target,       cm
