@@ -66,17 +66,19 @@ def sample_from_bounding_sphere():
     az = 2*np.pi*st.uniform.rvs() # the distribution of azimuthal angles is flat
     pol = np.arccos(1 - 2*st.uniform.rvs()) # the distribution of polar angles is weighted for even coverage per solid angle
     r = sim_parameters["generation sphere radius"]
+    center = sim_parameters["generation sphere center"]
     
     x = r*np.cos(az)*np.sin(pol)
     y = r*np.sin(az)*np.sin(pol)
     z = r*np.cos(pol)
 
-    return np.array([x, y, z])
+    return np.array([x, y, z]) + center
 
 atm_spect = np.loadtxt('atm_flux.dat')
 def sample_from_CR_spectrum():
     ind = np.random.choice(atm_spect.shape[0])
-    return atm_spect[ind]
+    E, zen = atm_spect[ind]
+    return 1.e3*E, zen
     
 class Efield:
     def __init__(self, transv, longit):
@@ -96,7 +98,10 @@ class charge:
         self.history = []
         self.arrivalT = 0
     def drift(self, this_E, drift_model = 'randomWalk'):
-        ## TODO: add bulk drift method, pass a flag to use bulk vs. brownian drift
+        self.history.append(self.pos)
+
+        if not self.is_in_tpc():
+            self.fate = 2 # fate == 2 means the electron was generated outside of the tpc volume
         
         # for each timestep, sample the next position from the bulk drift PDF:
         # n(rho, z, t) = (n0/(4*pi*DT*t*sqrt(4*pi*DL*t)))*exp(-(z - v*t)^2/(4*DL*t) - lambda*v*t)*exp(-rho^2/(4*DT*t))
@@ -109,26 +114,26 @@ class charge:
             # assumes the field is constant everywhere
             # and the angle of deflection is not too great
 
-            self.history.append(self.pos)
+            while self.fate == None:
+        
+                localEfield = this_E.value(self.pos)
 
-            localEfield = this_E.value(self.pos)
-
-            v_drift = physics_parameters["v"](localEfield)
-            v = mag(v_drift)
+                v_drift = physics_parameters["v"](localEfield)
+                v = mag(v_drift)
             
-            t0 = self.pos[2]/v
+                t0 = self.pos[2]/v
 
-            x = st.norm.rvs(loc = self.pos[0], scale = np.sqrt(4*physics_parameters["DT"]*t0))
-            y = st.norm.rvs(loc = self.pos[1], scale = np.sqrt(4*physics_parameters["DT"]*t0))
-            z = 0
-            t = st.norm.rvs(loc = t0, scale = np.sqrt(4*physics_parameters["DL"]*t0)/v)
+                x = st.norm.rvs(loc = self.pos[0], scale = np.sqrt(4*physics_parameters["DT"]*t0))
+                y = st.norm.rvs(loc = self.pos[1], scale = np.sqrt(4*physics_parameters["DT"]*t0))
+                z = 0
+                t = st.norm.rvs(loc = t0, scale = np.sqrt(4*physics_parameters["DL"]*t0)/v)
 
-            self.pos = np.array([x, y, z])
-            self.history.append(self.pos)
-            self.arrivalT = t
-
-            self.fate = 1
-
+                self.pos = np.array([x, y, z])
+                self.history.append(self.pos)
+                self.arrivalT = t
+                
+                self.fate = 1
+            
         elif drift_model == 'randomWalk':
             while self.fate == None:
                 localEfield = this_E.value(self.pos)
@@ -144,9 +149,8 @@ class charge:
 
                 dl = dz*drift_direction + dx*perp_direction1 + dy*perp_direction2
                 
-                self.history.append(self.pos)
-
                 self.pos = self.pos + dl
+                self.history.append(self.pos)
 
                 self.arrivalT += sim_parameters["dt"]
             
@@ -156,6 +160,14 @@ class charge:
 
         else:
             raise ValueError (drift_model + " is not a valid drift model!")
+
+    def is_in_tpc(self):
+        bounds = detector_parameters["detector bounds"]
+        is_in_x_bounds = (self.pos[0] > bounds[0][0]) & (self.pos[0] < bounds[0][1])
+        is_in_y_bounds = (self.pos[1] > bounds[1][0]) & (self.pos[1] < bounds[1][1])
+        is_in_z_bounds = (self.pos[2] > bounds[2][0]) & (self.pos[2] < bounds[2][1])
+
+        return is_in_x_bounds & is_in_y_bounds & is_in_z_bounds
 
 class radSource:
     def __init__(self, thisSource = 'Cs137'):        
@@ -205,14 +217,12 @@ class tracklet:
         
 class cosmicRayTrack:
     def __init__(self):
-        # self.pos = sample_from_bounding_sphere()
-        # self.Ei, self.zen = sample_from_CR_spectrum()
-        self.pos = sample_from_bounding_sphere()
-        self.Ei, zen = sample_from_CR_spectrum()
-        az = 2*np.pi*st.uniform.rvs()
-        self.dir = np.array([np.cos(az)*np.sin(zen),
-                             np.sin(az)*np.sin(zen),
-                             np.cos(zen)])
+        self.throw_pos_dir()
+        while np.dot(norm(self.pos - detector_parameters['detector center']), self.dir) > 0:
+            self.throw_pos_dir()
+        print (self.pos)
+        print (self.dir)
+        print (np.dot(norm(self.pos - detector_parameters['detector center']), self.dir))
         
         self.length = physics_parameters["mu-Ar range"](self.Ei) # track length [cm]
 
@@ -222,6 +232,17 @@ class cosmicRayTrack:
         # dQdx = recomb(dEdx)
         self.Qtot = self.Ei*physics_parameters["R"]/physics_parameters["w"] # total ionized charge [e]
         self.dQdx = self.dEdx*physics_parameters["R"]/physics_parameters["w"] # ioniization density [e/cm]
+
+    def throw_pos_dir(self):
+        # self.pos = sample_from_bounding_sphere()
+        # self.Ei, self.zen = sample_from_CR_spectrum()
+        self.pos = sample_from_bounding_sphere()
+        self.Ei, zen = sample_from_CR_spectrum()
+        az = 2*np.pi*st.uniform.rvs()
+        self.dir = np.array([np.cos(az)*np.sin(zen),
+                             np.sin(az)*np.sin(zen),
+                             np.cos(zen)])
+        
 
     def generate_segments(self):
         """
@@ -335,18 +356,21 @@ if __name__ == '__main__':
         this_charge.drift(thisEfield, args.drift)
         
         x, y, z = np.array(this_charge.history).T
-        
-        arrivalTimes.append(this_charge.arrivalT)
-        finalXs.append(this_charge.pos[0])
-        finalYs.append(this_charge.pos[1])
-        finalZs.append(this_charge.pos[2])
 
-        initXs.append(this_charge.pos_i[0])
-        initYs.append(this_charge.pos_i[1])
-        initZs.append(this_charge.pos_i[2])
+        if this_charge.fate == 1:
+            arrivalTimes.append(this_charge.arrivalT)
+            finalXs.append(this_charge.pos[0])
+            finalYs.append(this_charge.pos[1])
+            finalZs.append(this_charge.pos[2])
 
-        if args.verbose:
-            print ("charge " + str(i) + " terminates at " + str(this_charge.pos))
+            initXs.append(this_charge.pos_i[0])
+            initYs.append(this_charge.pos_i[1])
+            initZs.append(this_charge.pos_i[2])
+
+            if args.verbose:
+                print ("charge " + str(i) + " terminates at " + str(this_charge.pos))
+
+    print (len(arrivalTimes))
             
     np.save(outFile,
             np.array([finalXs,

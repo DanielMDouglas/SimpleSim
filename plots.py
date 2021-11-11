@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 if __name__ == '__main__':
     import argparse
@@ -18,9 +19,10 @@ if __name__ == '__main__':
     x, y, z, t = data
 
     fig = plt.figure()
-    ax = fig.add_subplot(projection = '3d')
+    # ax = fig.add_subplot(projection = '3d')
+    ax = Axes3D(fig)
 
-    ax.scatter(x, y, z)
+    ax.scatter(x, y, z, c = t)
 
     target_radius = 0.2
     tspace = np.linspace(0, 2*np.pi, 1000)

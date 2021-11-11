@@ -148,17 +148,24 @@ physics_parameters = {"DT": 8.8e-6,                          # transverse diffus
                       "e-Ar range": eStarArProp.betaRange,   # range of beta- in Ar,                 cm
                       "e-Ar dEdx": eStarArProp.betadEdx,     # total stopping power of beta- in Ar,  MeV/cm
                       "mu-Ar dEdx": bnlArProp.mudEdx,        # stopping power of muon in Ar,         MeV/cm
-                      "mu-Ar range": bnlArProp.muRange,      # rang of muon in Ar,                   cm
+                      "mu-Ar range": bnlArProp.muRange,      # range of muon in Ar,                   cm
                       "lAr density": lArDens}                # density of liquid Argon (@ B.P.),     g/cm^3
 
 
-sim_parameters = {"dt": 5.e-1,                      # time step for integrating the electron's path,        us
-                  "dx": 1.e-1,                      # spatial discretization for tracks (the dx in dEdx),   cm
-                  "scalingF": 100,                  # electrons per charge bundle
-                  "generation sphere radius": 50.}  # radius of the sphere on which muons are generated,    cm
-
-detector_parameters = {"cathode position": 50,   # distance from cathode to anode,     cm
-                       "target radius": 0.2,     # radius of the cathode target,       cm
-                       "noise level": 200,       # ENC (electrons)
-                       "nominal field": 0.5,     # nominal field strength,             kV / cm
-                       "pixel threshold": 4e2 }  # threshold for pixel hit ,           # e-
+sim_parameters = {"dt": 5.e-1,                            # time step for integrating the electron's path,        us
+                  "dx": 1.e-1,                            # spatial discretization for tracks (the dx in dEdx),   cm
+                  "scalingF": 10000,                      # electrons per charge bundle
+                  "generation sphere radius": 25.,        # radius of the sphere on which muons are generated,    cm
+                  "generation sphere center": [0, 0, 15], # center of the generation sphere,                      cm
+}
+                  
+detector_parameters = {"cathode position": 30,          # distance from cathode to anode,     cm
+                       "target radius": 0.2,            # radius of the cathode target,       cm
+                       "noise level": 200,              # ENC (electrons)
+                       "nominal field": 0.5,            # nominal field strength,             kV / cm
+                       "pixel threshold": 4e2,          # threshold for pixel hit ,           # e-
+                       "detector bounds": [[-15, 15],   # min and max extent in x, y, z,      cm
+                                           [-15, 15],
+                                           [0, 30]],
+                       "detector center": [0, 0, 15],   # center of tpc volume,               cm
+}
