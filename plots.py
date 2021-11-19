@@ -4,7 +4,8 @@ from mpl_toolkits.mplot3d import Axes3D
 
 def draw_boundaries(ax):
     from parameters import detector_parameters
-    bounds = detector_parameters['detector bounds']
+    bounds = [[-15,15],[0,30],[-15,15]]
+
     ax.plot([bounds[0][0], bounds[0][1]],
             [bounds[1][0], bounds[1][0]],
             [bounds[2][0], bounds[2][0]] , color = 'black', ls = '--')
@@ -65,17 +66,30 @@ if __name__ == '__main__':
     # ax = fig.add_subplot(projection = '3d')
     ax = Axes3D(fig)
 
-    ax.scatter(x, y, z, c = t)
+    ax.scatter(z, x, y, c = t)
+#     ax.scatter(x, y, z, c = t)
 
     # target_radius = 0.2
     # tspace = np.linspace(0, 2*np.pi, 1000)
     # ax.plot(target_radius*np.cos(tspace), target_radius*np.sin(tspace), 50, color = 'black', ls = '--')
 
     draw_boundaries(ax)
+
+    ax.xaxis.pane.fill = False
+    ax.yaxis.pane.fill = False
+    ax.zaxis.pane.fill = False
+
+    ax.xaxis.pane.set_edgecolor('w')
+    ax.yaxis.pane.set_edgecolor('w')
+    ax.zaxis.pane.set_edgecolor('w')
     
-    ax.set_xlabel(r'x [cm]')
-    ax.set_ylabel(r'y [cm]')
-    ax.set_zlabel(r'z [cm]')
+    ax.set_xlabel(r'Beam Direction [cm]')
+    ax.set_ylabel(r'Drift Direction [cm]')
+    ax.set_zlabel(r'Zenith Direciton [cm]')
+
+#     ax.set_xlabel(r'x [cm]')
+#     ax.set_ylabel(r'y [cm]')
+#     ax.set_zlabel(r'z [cm]')
     
     plt.show()
 
@@ -94,16 +108,10 @@ if __name__ == '__main__':
 
     # # print (counts.shape)
 
-  # import matplotlib as mpl
+    # import matplotlib as mpl
     
     # plt.hist2d(x, y, bins = [xBins, yBins], norm = mpl.colors.LogNorm())
     # cb = plt.colorbar(label = r'raw charge per pad [e]')
     # plt.xlabel(r'x [cm]')
     # plt.ylabel(r'y [cm]')
     # plt.show()
-
-   # Testing testing
-
-
-
-

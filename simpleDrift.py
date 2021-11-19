@@ -18,9 +18,9 @@ def sample_diffused_pdf(v):
     dt = sim_parameters["dt"]
 
     # rho = st.norm.rvs(scale = np.sqrt(2*8*DL*dt))
-    x = st.norm.rvs(scale = np.sqrt(4*DT*dt))
+    x = st.norm.rvs(loc = v*dt, scale = np.sqrt(4*DL*dt)) #x is the drift direction
     y = st.norm.rvs(scale = np.sqrt(4*DT*dt))
-    z = st.norm.rvs(loc = v*dt, scale = np.sqrt(4*DL*dt))
+    z = st.norm.rvs(scale = np.sqrt(4*DT*dt))
     return x, y, z
 
 def sample_azimuthal_pdf():
@@ -35,12 +35,12 @@ def sample_from_cathode_target():
     """ 
     get a random position on the cathode target (8mm diameter on the cathode plane)
     """
-    z = detector_parameters["cathode position"]
+    x = detector_parameters["cathode position"]
     R = detector_parameters["target radius"]
 
     rho = np.power(st.uniform.rvs()*np.power(R, 2), 0.5)
     phi = st.uniform.rvs(scale = 2*np.pi)
-    x = rho*np.cos(phi)
+    z = rho*np.cos(phi)
     y = rho*np.sin(phi) 
 
     pos = np.array([x, y, z])
@@ -48,16 +48,52 @@ def sample_from_cathode_target():
 
 def sample_from_hemisphere():
     """
-    return a random unit vector where the z component is negative
     """
     az = 2*np.pi*st.uniform.rvs() # the distribution of azimuthal angles is flat
     pol = np.arccos(-st.uniform.rvs()) # the distribution of polar angles is weighted for even coverage per solid angle
 
-    x = np.cos(az)*np.sin(pol)
-    y = np.sin(az)*np.sin(pol)
-    z = np.cos(pol)
+    # Beam z, Zenith y, x drift
+    x = np.sin(az)*np.sin(pol)
+    y = np.cos(pol)
+    z = np.cos(az)*np.sin(pol)
+
+    # Standard spherical coords
+    # x = np.cos(az)*np.sin(pol)
+    # y = np.sin(az)*np.sin(pol)
+    # z = np.cos(pol)
 
     return np.array([x, y, z])
+
+def sample_from_face():
+    """
+    Return a position from a rectangle near the upstream face 
+    """
+
+    x0 = np.random.uniform(0,30,1)[0]
+    y0 = np.random.uniform(-15,15,1)[0]
+    z0 = -15.1 # 0.1 cm behind the upstream face (located at -15 cm)
+
+    return np.array([x0, y0, z0])
+
+# def sample_from_bounding_sphere(zenith):
+#     """
+#     return a random position on a sphere that 
+#     """
+#     az = 2*np.pi*st.uniform.rvs() # the distribution of azimuthal angles is flat
+#     r = sim_parameters["generation sphere radius"]
+#     center = sim_parameters["generation sphere center"]
+
+#     # Beam z, Zenith y, x drift
+#     x = r*np.sin(az)*np.sin(zenith)
+#     y = r*np.cos(zenith)
+#     z = r*np.cos(az)*np.sin(zenith)
+
+#     # Standard spherical coords
+#     # x = r*np.cos(az)*np.sin(pol)
+#     # y = r*np.sin(az)*np.sin(pol)
+#     # z = r*np.cos(pol)
+
+#     return np.array([x, y, z]) + center
 
 def sample_from_bounding_sphere():
     """
@@ -67,10 +103,16 @@ def sample_from_bounding_sphere():
     pol = np.arccos(1 - 2*st.uniform.rvs()) # the distribution of polar angles is weighted for even coverage per solid angle
     r = sim_parameters["generation sphere radius"]
     center = sim_parameters["generation sphere center"]
-    
-    x = r*np.cos(az)*np.sin(pol)
-    y = r*np.sin(az)*np.sin(pol)
-    z = r*np.cos(pol)
+
+    # Beam z, Zenith y, x drift
+    x = r*np.sin(az)*np.sin(pol)
+    y = r*np.cos(pol)
+    z = r*np.cos(az)*np.sin(pol)
+
+    # Standard spherical coords
+    # x = r*np.cos(az)*np.sin(pol)
+    # y = r*np.sin(az)*np.sin(pol)
+    # z = r*np.cos(pol)
 
     return np.array([x, y, z]) + center
 
@@ -79,6 +121,12 @@ def sample_from_CR_spectrum():
     ind = np.random.choice(atm_spect.shape[0])
     E, zen = atm_spect[ind]
     return 1.e3*E, zen
+
+beam_spect = np.loadtxt('beam_flux.dat')
+def sample_from_beam_spectrum():
+    ind = np.random.choice(beam_spect.shape[0])
+    E, zen, az = beam_spect[ind]
+    return 1.e3*E, zen, az
     
 class Efield:
     def __init__(self, transv, longit):
@@ -87,7 +135,8 @@ class Efield:
         self.transv = transv
         self.longit = longit
     def value(self, pos):
-        return np.array([self.transv, 0., detector_parameters['nominal field'] + self.longit])
+        return np.array( [detector_parameters['nominal field'] + self.longit, 0., self.transv ] ) # x drift
+        # return np.array([self.transv, 0., detector_parameters['nominal field'] + self.longit]) # z drift
         
 class charge:
     def __init__(self, pos_i):
@@ -121,11 +170,11 @@ class charge:
                 v_drift = physics_parameters["v"](localEfield)
                 v = mag(v_drift)
             
-                t0 = self.pos[2]/v
+                t0 = self.pos[0]/v
 
-                x = st.norm.rvs(loc = self.pos[0], scale = np.sqrt(4*physics_parameters["DT"]*t0))
-                y = st.norm.rvs(loc = self.pos[1], scale = np.sqrt(4*physics_parameters["DT"]*t0))
-                z = 0
+                x = 0
+                z = st.norm.rvs(loc = self.pos[1], scale = np.sqrt(4*physics_parameters["DT"]*t0))
+                y = st.norm.rvs(loc = self.pos[2], scale = np.sqrt(4*physics_parameters["DT"]*t0))
                 t = st.norm.rvs(loc = t0, scale = np.sqrt(4*physics_parameters["DL"]*t0)/v)
 
                 self.pos = np.array([x, y, z])
@@ -147,7 +196,7 @@ class charge:
                 dx, dy, dz = sample_diffused_pdf(v_drift)
                 phi = sample_azimuthal_pdf()
 
-                dl = dz*drift_direction + dx*perp_direction1 + dy*perp_direction2
+                dl = dx*drift_direction + dz*perp_direction1 + dy*perp_direction2
                 
                 self.pos = self.pos + dl
                 self.history.append(self.pos)
@@ -155,7 +204,7 @@ class charge:
                 self.arrivalT += sim_parameters["dt"]
             
                 # check for the particle to finish
-                if self.pos[2] <= 0:
+                if self.pos[0] <= 0:
                     self.fate = 1 # fate == 1 means the electron made it to the anode
 
         else:
@@ -234,14 +283,20 @@ class cosmicRayTrack:
         self.dQdx = self.dEdx*physics_parameters["R"]/physics_parameters["w"] # ioniization density [e/cm]
 
     def throw_pos_dir(self):
-        # self.pos = sample_from_bounding_sphere()
-        # self.Ei, self.zen = sample_from_CR_spectrum()
         self.pos = sample_from_bounding_sphere()
         self.Ei, zen = sample_from_CR_spectrum()
         az = 2*np.pi*st.uniform.rvs()
-        self.dir = np.array([np.cos(az)*np.sin(zen),
-                             np.sin(az)*np.sin(zen),
-                             np.cos(zen)])
+
+        # self.pos = sample_from_face()
+        # self.Ei, zen, az = sample_from_beam_spectrum()
+
+        # z beam, y zenith, x drift
+        self.dir = np.array( [ np.sin(az)*np.sin(zen), np.cos(zen), np.cos(az)*np.sin(zen) ] )
+
+        # Spherical Default
+        # self.dir = np.array([np.cos(az)*np.sin(zen),
+        #                      np.sin(az)*np.sin(zen),
+        #                      np.cos(zen)])
         
 
     def generate_segments(self):
@@ -273,18 +328,18 @@ if __name__ == '__main__':
                         help = 'where to save the destinations')
     parser.add_argument('-t', '--transverse', type = float,
                         default = 0,
-                        help = 'amount of transverse (x-direction) drift field to add')
+                        help = 'amount of transverse (z-direction) drift field to add')
     parser.add_argument('-l', '--longitudinal', type = float,
                         default = 0,
-                        help = 'amount of longitudinal (z-direction) drift field to add')
+                        help = 'amount of longitudinal (x-direction) drift field to add')
     parser.add_argument('-N', '--N', type = int,
                         default = int(1e2),
                         help = 'number of photoelectrons to drift')
     parser.add_argument('-z', '--z0', type = float,
-                        default = 50,
+                        default = 30,
                         help = 'nominal distance from cathode to anode')
     parser.add_argument('-g', '--generator', type = str,
-                        default = 'radSource',
+                        default = 'muon',
                         help = 'the generator to use for building charge clouds')
     parser.add_argument('-d', '--drift', type = str,
                         default = 'randomWalk',
@@ -378,8 +433,8 @@ if __name__ == '__main__':
                       finalZs,
                       arrivalTimes]))
 
-    # np.save(outFile,
-    #         np.array([initXs,
-    #                   initYs,
-    #                   initZs,
-    #                   arrivalTimes]))
+    np.save('driftHits_init.npy',
+            np.array([initXs,
+                      initYs,
+                      initZs,
+                      arrivalTimes]))
