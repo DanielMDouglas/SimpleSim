@@ -1,11 +1,14 @@
 import numpy as np
 import scipy.stats as st
-    
+
+
 def mag(vect):
     return np.sqrt(np.sum(np.power(vect, 2)))
 
+
 def norm(vect):
     return vect/mag(vect)
+
 
 def get_perpendicular_vectors(vect):
     # TODO
@@ -16,5 +19,5 @@ def get_perpendicular_vectors(vect):
     perp1 /= np.linalg.norm(perp1)
 
     perp2 = np.cross(vect, perp1)
-    
+
     return perp1, perp2

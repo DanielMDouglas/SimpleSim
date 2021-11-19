@@ -2,48 +2,49 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+
 def draw_boundaries(ax):
     from parameters import detector_parameters
-    bounds = [[-15,15],[0,30],[-15,15]]
+    bounds = [[-15, 15], [0, 30], [-15, 15]]
 
     ax.plot([bounds[0][0], bounds[0][1]],
             [bounds[1][0], bounds[1][0]],
-            [bounds[2][0], bounds[2][0]] , color = 'black', ls = '--')
+            [bounds[2][0], bounds[2][0]], color='black', ls='--')
     ax.plot([bounds[0][0], bounds[0][1]],
             [bounds[1][1], bounds[1][1]],
-            [bounds[2][0], bounds[2][0]] , color = 'black', ls = '--')
+            [bounds[2][0], bounds[2][0]], color='black', ls='--')
     ax.plot([bounds[0][0], bounds[0][1]],
             [bounds[1][0], bounds[1][0]],
-            [bounds[2][1], bounds[2][1]] , color = 'black', ls = '--')
+            [bounds[2][1], bounds[2][1]], color='black', ls='--')
     ax.plot([bounds[0][0], bounds[0][1]],
             [bounds[1][1], bounds[1][1]],
-            [bounds[2][1], bounds[2][1]] , color = 'black', ls = '--')
+            [bounds[2][1], bounds[2][1]], color='black', ls='--')
 
     ax.plot([bounds[0][0], bounds[0][0]],
             [bounds[1][0], bounds[1][1]],
-            [bounds[2][0], bounds[2][0]] , color = 'black', ls = '--')
+            [bounds[2][0], bounds[2][0]], color='black', ls='--')
     ax.plot([bounds[0][1], bounds[0][1]],
             [bounds[1][0], bounds[1][1]],
-            [bounds[2][0], bounds[2][0]] , color = 'black', ls = '--')
+            [bounds[2][0], bounds[2][0]], color='black', ls='--')
     ax.plot([bounds[0][0], bounds[0][0]],
             [bounds[1][0], bounds[1][1]],
-            [bounds[2][1], bounds[2][1]] , color = 'black', ls = '--')
+            [bounds[2][1], bounds[2][1]], color='black', ls='--')
     ax.plot([bounds[0][1], bounds[0][1]],
             [bounds[1][0], bounds[1][1]],
-            [bounds[2][1], bounds[2][1]] , color = 'black', ls = '--')
+            [bounds[2][1], bounds[2][1]], color='black', ls='--')
 
     ax.plot([bounds[0][0], bounds[0][0]],
             [bounds[1][0], bounds[1][0]],
-            [bounds[2][0], bounds[2][1]] , color = 'black', ls = '--')
+            [bounds[2][0], bounds[2][1]], color='black', ls='--')
     ax.plot([bounds[0][1], bounds[0][1]],
             [bounds[1][0], bounds[1][0]],
-            [bounds[2][0], bounds[2][1]] , color = 'black', ls = '--')
+            [bounds[2][0], bounds[2][1]], color='black', ls='--')
     ax.plot([bounds[0][0], bounds[0][0]],
             [bounds[1][1], bounds[1][1]],
-            [bounds[2][0], bounds[2][1]] , color = 'black', ls = '--')
+            [bounds[2][0], bounds[2][1]], color='black', ls='--')
     ax.plot([bounds[0][1], bounds[0][1]],
             [bounds[1][1], bounds[1][1]],
-            [bounds[2][0], bounds[2][1]] , color = 'black', ls = '--')
+            [bounds[2][0], bounds[2][1]], color='black', ls='--')
 
 
 if __name__ == '__main__':
@@ -51,14 +52,14 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('input', nargs = '+',
-                        type = str,
-                        help = 'data to show')
+    parser.add_argument('input', nargs='+',
+                        type=str,
+                        help='data to show')
 
     args = parser.parse_args()
     data = np.load(args.input[0])
 
-    print (data.shape)
+    print(data.shape)
 
     x, y, z, t = data
 
@@ -66,7 +67,7 @@ if __name__ == '__main__':
     # ax = fig.add_subplot(projection = '3d')
     ax = Axes3D(fig)
 
-    ax.scatter(z, x, y, c = t)
+    ax.scatter(z, x, y, c=t)
 #     ax.scatter(x, y, z, c = t)
 
     # target_radius = 0.2
@@ -82,7 +83,7 @@ if __name__ == '__main__':
     ax.xaxis.pane.set_edgecolor('w')
     ax.yaxis.pane.set_edgecolor('w')
     ax.zaxis.pane.set_edgecolor('w')
-    
+
     ax.set_xlabel(r'Beam Direction [cm]')
     ax.set_ylabel(r'Drift Direction [cm]')
     ax.set_zlabel(r'Zenith Direciton [cm]')
@@ -90,7 +91,7 @@ if __name__ == '__main__':
 #     ax.set_xlabel(r'x [cm]')
 #     ax.set_ylabel(r'y [cm]')
 #     ax.set_zlabel(r'z [cm]')
-    
+
     plt.show()
 
     # pixelPitch = 0.4434
@@ -109,7 +110,7 @@ if __name__ == '__main__':
     # # print (counts.shape)
 
     # import matplotlib as mpl
-    
+
     # plt.hist2d(x, y, bins = [xBins, yBins], norm = mpl.colors.LogNorm())
     # cb = plt.colorbar(label = r'raw charge per pad [e]')
     # plt.xlabel(r'x [cm]')
