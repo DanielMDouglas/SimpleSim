@@ -94,10 +94,16 @@ if __name__ == '__main__':
 
     # # print (counts.shape)
 
-    # import matplotlib as mpl
+  # import matplotlib as mpl
     
     # plt.hist2d(x, y, bins = [xBins, yBins], norm = mpl.colors.LogNorm())
     # cb = plt.colorbar(label = r'raw charge per pad [e]')
     # plt.xlabel(r'x [cm]')
     # plt.ylabel(r'y [cm]')
     # plt.show()
+
+   # Testing testing
+
+
+
+
