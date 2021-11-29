@@ -3,6 +3,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+from eventRecord import *
+from parameters import *
+
 # Pretty fonts for figures 
 mpl.rc('text', usetex = True)
 mpl.rc('font', family='SignPainter')
@@ -10,7 +13,8 @@ mpl.rc('font', family='SignPainter')
 
 def draw_boundaries(ax):
 #     from parameters import detector_parameters
-    bounds = [[-15, 15], [0, 30], [-15, 15]]
+    # bounds = [[-15, 15], [0, 30], [-15, 15]]
+    bounds = detector_parameters['detector bounds']
 
     ax.plot([bounds[0][0], bounds[0][1]],
             [bounds[1][0], bounds[1][0]],
@@ -62,17 +66,15 @@ if __name__ == '__main__':
                         help='data to show')
 
     args = parser.parse_args()
-    data = np.load(args.input[0])
+    thisRecord = np.load(args.input[0])[0]
 
-#     print(data.shape)
-
-    x, y, z, t = data
+    x, y, z, t = thisRecord.chargeMap
 
     fig = plt.figure()
     # ax = fig.add_subplot(projection = '3d')
 
     ax = Axes3D(fig)
-    ax.scatter(z, x, y, c=t, s = 1)
+    ax.scatter(x, y, z, c=t, s = 1)
     #     ax.scatter(x, y, z, c = t)
 
     # target_radius = 0.2
@@ -89,14 +91,10 @@ if __name__ == '__main__':
     ax.yaxis.pane.set_edgecolor('w')
     ax.zaxis.pane.set_edgecolor('w')
 
-    ax.set_xlabel(r'Beam Direction [cm]',fontsize = 15)
-    ax.set_ylabel(r'Drift Direction [cm]',fontsize = 15)
-    ax.set_zlabel(r'Zenith Direciton [cm]',fontsize = 15)
+    ax.set_xlabel(r'Drift Direction [cm]',fontsize = 15)
+    ax.set_ylabel(r'Zenith Direciton [cm]',fontsize = 15)
+    ax.set_zlabel(r'Beam Direction [cm]',fontsize = 15)
     plt.tick_params(axis='both', which='both', labelsize = 15, direction = 'in')
-
-#     ax.set_xlabel(r'x [cm]')
-#     ax.set_ylabel(r'y [cm]')
-#     ax.set_zlabel(r'z [cm]')
 
     plt.show()
 

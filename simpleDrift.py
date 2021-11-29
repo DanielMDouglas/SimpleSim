@@ -5,7 +5,7 @@ import sys
 
 from utils import *
 from parameters import *
-
+from eventRecord import *
 
 def sample_diffused_pdf(v):
     """
@@ -421,13 +421,9 @@ if __name__ == '__main__':
 
     thisEfield = Efield(args.transverse, args.longitudinal)
 
-    # Npe = int(st.norm.rvs(loc = physics_parameters["npe"],
-    #                       scale = physics_parameters["npe_sigma"]))
-
-    # print (Npe)
-
-    # Npe = 5000
     Npe = args.N
+
+    thisEventRecord = eventRecord()
 
     arrivalTimes = []
     finalXs = []
@@ -447,6 +443,10 @@ if __name__ == '__main__':
 
     elif args.generator == 'cosmic':
         thisTrack = cosmicRayTrack().track
+
+        thisEventRecord.pos = thisTrack.pos
+        thisEventRecord.dir = thisTrack.dir
+        
         theseTracklets = thisTrack.generate_segments()
         charges = []
         for thisTracklet in theseTracklets:
@@ -456,6 +456,10 @@ if __name__ == '__main__':
 
     elif args.generator == 'rock':
         thisTrack = rockMuonTrack().track
+
+        thisEventRecord.pos = thisTrack.pos
+        thisEventRecord.dir = thisTrack.dir
+
         theseTracklets = thisTrack.generate_segments()
         charges = []
         for thisTracklet in theseTracklets:
@@ -481,11 +485,8 @@ if __name__ == '__main__':
         print("drifting " + str(nChargeBundles) + " discrete charge bundles")
     for i, this_charge in enumerate(charges):
 
-        if args.verbose:
-            print("charge " + str(i) + " originates at " + str(this_charge.pos))
-
-        # starting_position = sample_from_cathode_target(z0 = args.z0)
-        # this_charge = charge(starting_position)
+        # if args.verbose:
+        #     print("charge " + str(i) + " originates at " + str(this_charge.pos))
 
         this_charge.drift(thisEfield, args.drift)
 
@@ -501,21 +502,32 @@ if __name__ == '__main__':
             initYs.append(this_charge.pos_i[1])
             initZs.append(this_charge.pos_i[2])
 
-            if args.verbose:
-                print("charge " + str(i) +
-                      " terminates at " + str(this_charge.pos))
+            # if args.verbose:
+            #     print("charge " + str(i) +
+            #           " terminates at " + str(this_charge.pos))
 
     if args.verbose:
         print("writing record of " + str(len(arrivalTimes)) + " charges")
 
-    np.save(outFile,
-            np.array([finalXs,
-                      finalYs,
-                      finalZs,
-                      arrivalTimes]))
+    thisEventRecord.chargeMap = np.array([finalXs,
+                                          finalYs,
+                                          finalZs,
+                                          arrivalTimes])
 
-    np.save('driftHits_init.npy',
-            np.array([initXs,
-                      initYs,
-                      initZs,
-                      arrivalTimes]))
+    thisEventRecord.QdepMap = np.array([initXs,
+                                        initYs,
+                                        initZs,
+                                        arrivalTimes])
+    # np.save(outFile,
+    #         np.array([finalXs,
+    #                   finalYs,
+    #                   finalZs,
+    #                   arrivalTimes]))
+
+    # np.save('driftHits_init.npy',
+    #         np.array([initXs,
+    #                   initYs,
+    #                   initZs,
+    #                   arrivalTimes]))
+
+    np.save(outFile, np.array([thisEventRecord]))
