@@ -69,11 +69,11 @@ if __name__ == '__main__':
     x, y, z, t = data
 
     fig = plt.figure()
-#     ax = fig.add_subplot(projection = '3d')
+    # ax = fig.add_subplot(projection = '3d')
 
     ax = Axes3D(fig)
     ax.scatter(z, x, y, c=t, s = 1)
-#     ax.scatter(x, y, z, c = t)
+    #     ax.scatter(x, y, z, c = t)
 
     # target_radius = 0.2
     # tspace = np.linspace(0, 2*np.pi, 1000)

@@ -319,23 +319,6 @@ class muonTrack:
             self.dE.append(dE)
             Eseg -= dE
 
-    def throw_pos_dir(self):
-        self.pos = sample_from_bounding_sphere()
-        self.Ei, zen = sample_from_CR_spectrum()
-        az = 2*np.pi*st.uniform.rvs()
-
-        # self.pos = sample_from_face()
-        # self.Ei, zen, az = sample_from_beam_spectrum()
-
-        # z beam, y zenith, x drift
-        self.dir = np.array(
-            [np.sin(az)*np.sin(zen), np.cos(zen), np.cos(az)*np.sin(zen)])
-
-        # Spherical Default
-        # self.dir = np.array([np.cos(az)*np.sin(zen),
-        #                      np.sin(az)*np.sin(zen),
-        #                      np.cos(zen)])
-
     def generate_segments(self):
         """
         from the track shape defined in the initializer, generate a charge
@@ -360,10 +343,7 @@ class cosmicRayTrack:
         # if the track is not poniting inwards, try again
         while np.dot(norm(self.pos - detector_parameters['detector center']), self.dir) > 0:
             self.throw_pos_dir()
-        print (self.pos)
-        print (self.dir)
-        print (np.dot(norm(self.pos - detector_parameters['detector center']), self.dir))
-            
+        
         self.track = muonTrack(self.pos, self.dir, self.Ei)
 
     def throw_pos_dir(self):
@@ -525,7 +505,8 @@ if __name__ == '__main__':
                 print("charge " + str(i) +
                       " terminates at " + str(this_charge.pos))
 
-    print(len(arrivalTimes))
+    if args.verbose:
+        print("writing record of " + str(len(arrivalTimes)) + " charges")
 
     np.save(outFile,
             np.array([finalXs,
