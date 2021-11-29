@@ -307,20 +307,20 @@ class cosmicRayTrack:
             self.throw_pos_dir()
         print(self.pos)
         print(self.dir)
-        print(
-            np.dot(norm(self.pos - detector_parameters['detector center']), self.dir))
+        print(np.dot(norm(self.pos - detector_parameters['detector center']), self.dir))
+
+        self.segment_length = sim_parameters['dx']
 
         # track length [cm]
         self.length = physics_parameters["mu-Ar range"](self.Ei)
 
-        # dEdx = betadEdx(Ei)
-        self.dEdx = self.Ei/self.length  # deposited energy density [MeV/cm]
-
-        # dQdx = recomb(dEdx)
-        # total ionized charge [e]
-        self.Qtot = self.Ei*physics_parameters["R"]/physics_parameters["w"]
-        # ioniization density [e/cm]
-        self.dQdx = self.dEdx*physics_parameters["R"]/physics_parameters["w"]
+        self.dE = [] # deposited energy per segment [MeV]
+        Eseg = self.Ei
+        while Eseg >= 0:
+            dEdx = physics_parameters['mu-Ar dEdx'](Eseg)
+            dE = dEdx*self.segment_length
+            self.dE.append(dE)
+            Eseg -= dE
 
     def throw_pos_dir(self):
         self.pos = sample_from_bounding_sphere()
@@ -344,17 +344,16 @@ class cosmicRayTrack:
         from the track shape defined in the initializer, generate a charge
         """
 
-        segment_length = sim_parameters['dx']
-        nSegments = int(self.length/segment_length)
+        nSegments = int(self.length/self.segment_length)
 
         trackletList = []
 
-        for i in range(nSegments):
-            pos = self.pos + self.dir*i*segment_length
+        for i, dE in enumerate(self.dE):
+            pos = self.pos + self.dir*i*self.segment_length
             dir = self.dir
             edep = 1
 
-            trackletList.append(tracklet(pos, dir, edep, segment_length))
+            trackletList.append(tracklet(pos, dir, dE, self.segment_length))
 
         return trackletList
 
