@@ -1,10 +1,15 @@
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+# Pretty fonts for figures 
+mpl.rc('text', usetex = True)
+mpl.rc('font', family='SignPainter')
+
 
 def draw_boundaries(ax):
-    from parameters import detector_parameters
+#     from parameters import detector_parameters
     bounds = [[-15, 15], [0, 30], [-15, 15]]
 
     ax.plot([bounds[0][0], bounds[0][1]],
@@ -59,15 +64,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
     data = np.load(args.input[0])
 
-    print(data.shape)
+#     print(data.shape)
 
     x, y, z, t = data
 
     fig = plt.figure()
-    # ax = fig.add_subplot(projection = '3d')
-    ax = Axes3D(fig)
+#     ax = fig.add_subplot(projection = '3d')
 
-    ax.scatter(z, x, y, c=t)
+    ax = Axes3D(fig)
+    ax.scatter(z, x, y, c=t, s = 1)
 #     ax.scatter(x, y, z, c = t)
 
     # target_radius = 0.2
@@ -84,9 +89,10 @@ if __name__ == '__main__':
     ax.yaxis.pane.set_edgecolor('w')
     ax.zaxis.pane.set_edgecolor('w')
 
-    ax.set_xlabel(r'Beam Direction [cm]')
-    ax.set_ylabel(r'Drift Direction [cm]')
-    ax.set_zlabel(r'Zenith Direciton [cm]')
+    ax.set_xlabel(r'Beam Direction [cm]',fontsize = 15)
+    ax.set_ylabel(r'Drift Direction [cm]',fontsize = 15)
+    ax.set_zlabel(r'Zenith Direciton [cm]',fontsize = 15)
+    plt.tick_params(axis='both', which='both', labelsize = 15, direction = 'in')
 
 #     ax.set_xlabel(r'x [cm]')
 #     ax.set_ylabel(r'y [cm]')

@@ -7,73 +7,55 @@ import sys
 from parameters import *
 from utils import *
 
-pixelPitch = 0.4434
-nPix = 16
+# Beam z, Zenith y, x drift
+def form_hits(finalLocs):
+    """
+    Return array of hits (x center, y center, t) 
+    """
+    x, y, z, t = finalLocs
+    sample = np.array([z, y, t]).T
 
-xBins = np.linspace(-pixelPitch*(nPix - 0.5), pixelPitch*(nPix - 0.5), 2*nPix)
-yBins = np.linspace(-pixelPitch*(nPix - 0.5), pixelPitch*(nPix - 0.5), 2*nPix)
-xBinCenters = 0.5*(xBins[:-1] + xBins[1:])
-yBinCenters = 0.5*(yBins[:-1] + yBins[1:])
-X, Y = np.meshgrid(xBinCenters, yBinCenters)
+    thresh = detector_parameters["pixel threshold"] # e's
+    pixelPitch = 0.4434
+    nPix = 34
 
-tBins = np.linspace(290, 330, 41)
-tBinCenters = 0.5*(tBins[:-1] + tBins[1:])
+    zBins = np.linspace(-pixelPitch*(nPix - 0.5), pixelPitch*(nPix - 0.5), 2*nPix)
+    yBins = np.linspace(-pixelPitch*(nPix - 0.5), pixelPitch*(nPix - 0.5), 2*nPix)
+    zBinCenters = 0.5*(zBins[:-1] + zBins[1:])
+    yBinCenters = 0.5*(yBins[:-1] + yBins[1:])
+    # X, Y = np.meshgrid(xBinCenters, yBinCenters)
 
-class pixel:
-    def __init__(self, (xCenter, yCenter), arrivalTimes):
-        boundaries = []
-        self.xCenter = xCenter
-        self.yCenter = yCenter
-        # arrival times is a histogram (tBins, nChargesArrived)
-        self.arrivalTimes = arrivalTimes
-        self.hits = []
-    def find_hits(self):
-        thisT = 0
-        thisQ = 0
-        scaledThreshold = detector_parameters["pixel threshold"]/sim_parameters["scalingF"]
+    t_start, t_end = int( round(min(t)) )-1, int( round(max(t)) ) + 1 #us
+    t_range_us = ( (t_end - t_start) )
+    n_tbins_200ns = t_range_us * 5
+    tBins = np.linspace( t_start, t_end, n_tbins_200ns )
+    # tBins = np.linspace(290, 330, 41)
+    tBinCenters = 0.5*(tBins[:-1] + tBins[1:])
 
-        if np.any(self.arrivalTimes):
-            print (self.arrivalTimes)
-            plt.step(tBinCenters, self.arrivalTimes)
+    counts, edges = np.histogramdd(sample, bins = [zBins, yBins, tBins])
 
-            accumulatedCharge = np.cumsum(self.arrivalTimes)
+    H = []
+    for i, zCenter in enumerate(zBinCenters):
+        for j, yCenter in enumerate(yBinCenters):
+            tHist = counts[i, j, :] # At some pixel, get the counts at each time tick (us)
+            counts_accum = 0
+            counts_registered = 0
+            collection_clock_ticks = 0
+            for k, count in enumerate(tHist): 
+                counts_accum += count
+                if counts_accum > thresh:
+                    collection_clock_ticks += 1
+                if collection_clock_ticks == 8:
+                    counts_collected = counts_accum 
+                    H.append( [zCenter, yCenter, t_start + 0.2*k, 1e2*counts_collected] )
+                if collection_clock_ticks == 11: 
+                    counts_accum = 0
+                    collection_clock_ticks = 0
+                    
+    return np.array( H )
 
-            print (accumulatedCharge)
-            
-            # hitTime
-            # hitTime = np.interp(scaledThreshold, accumulatedCharge, tBinCenters)
 
-            print (hitTime)
 
-            plt.step(tBinCenters, accumulatedCharge)
-
-            digitizedCharge = accumulatedCharge(hitTime)
-            # plt.axvline(x = hitTime)
-            # plt.axhline(y = scaledThreshold)
-            
-            plt.show()
-
-        # if it crosses the threshold, when (at what time tick does the qAccum > threshold)?
-        # go + 2us
-        # get the value of qAccum
-            
-        # integrate arriving charge
-        # when integral hits threshold, seek + 2 us
-        # yield a "hit" with clock timestamp + integrated charge up to then
-        self.hits.append(hit(thisT, thisQ))
-        # subtract that charge
-        # repeat the integration from there until the end of the window
-        return self.hits
-        
-        
-class hit:
-    def __init__(self, t, q):
-        self.t = t
-        self.q = q
-        
-class hitMap:
-    def __init__(self, hits):
-        self.hits = hits
         
 if __name__ == '__main__':
     import argparse
@@ -82,39 +64,14 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--input', type = str,
                         default = 'driftHits.npy',
                         help = 'where read the destinations from')
+    parser.add_argument('-o', '--output', type=str,
+                        default='pixels.npy',
+                        help='where to save')
     args = parser.parse_args()
-
+    outFile = args.output
     finalLocs = np.load(args.input)
 
-    x, y, z, t = finalLocs
+    H = form_hits(finalLocs) # Pixels are in the y,z plane
+    # Beam z, Zenith y, x drift
 
-
-    # TODO: find LArPix clock rate!
-    # for now, we are assuming 100 MHz = 10 ns
-    
-    print (tBins)
-    # counts, xBinEdges, yBinEdges = np.histogram2d(x, y, bins = [xBins, yBins])
-    # bin in x, y, t
-    sample = np.array([x, y, t]).T
-    print (sample.shape)
-    # counts, xBinEdges, yBinEdges, tBinEdges = np.histogramdd(sample, bins = [xBins, yBins, tBins])
-    counts, edges = np.histogramdd(sample, bins = [xBins, yBins, tBins])
-    print (counts.shape)
-
-    pixels = []
-    for i, xCenter in enumerate(xBinCenters):
-        for j, yCenter in enumerate(yBinCenters):
-            tHist = counts[i, j, :]
-            # create a new pixel with the right center (according to the bin centers)
-            thisPixel = pixel((xCenter, yCenter), tHist)
-            # assign that pixel the corresponding t histogram (column of counts)
-
-            thisPixel.find_hits() # do integration from t = 0 right and finds thresho...
-
-            pixels.append(thisPixel)
-
-    
-    # print (np.digitize(np.array([x, y]), bins = np.array([xBins, yBins])))
-    # TODO: find a way to assign arrival times to pixels based on arrival position
-
-    
+    np.save(outFile, H)
