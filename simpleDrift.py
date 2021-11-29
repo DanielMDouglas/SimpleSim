@@ -300,14 +300,11 @@ class tracklet:
         return charge(thisPos)
 
 
-class cosmicRayTrack:
-    def __init__(self):
-        self.throw_pos_dir()
-        while np.dot(norm(self.pos - detector_parameters['detector center']), self.dir) > 0:
-            self.throw_pos_dir()
-        print(self.pos)
-        print(self.dir)
-        print(np.dot(norm(self.pos - detector_parameters['detector center']), self.dir))
+class muonTrack:
+    def __init__(self, pos, dir, Ei):
+        self.pos = pos
+        self.dir = dir
+        self.Ei = Ei
 
         self.segment_length = sim_parameters['dx']
 
@@ -357,6 +354,58 @@ class cosmicRayTrack:
 
         return trackletList
 
+class cosmicRayTrack:
+    def __init__(self):
+        self.throw_pos_dir()
+        # if the track is not poniting inwards, try again
+        while np.dot(norm(self.pos - detector_parameters['detector center']), self.dir) > 0:
+            self.throw_pos_dir()
+        print (self.pos)
+        print (self.dir)
+        print (np.dot(norm(self.pos - detector_parameters['detector center']), self.dir))
+            
+        self.track = muonTrack(self.pos, self.dir, self.Ei)
+
+    def throw_pos_dir(self):
+        self.pos = sample_from_bounding_sphere()
+        self.Ei, zen = sample_from_CR_spectrum()
+        az = 2*np.pi*st.uniform.rvs()
+
+        # self.pos = sample_from_face()
+        # self.Ei, zen, az = sample_from_beam_spectrum()
+
+        # z beam, y zenith, x drift
+        self.dir = np.array(
+            [np.sin(az)*np.sin(zen), np.cos(zen), np.cos(az)*np.sin(zen)])
+
+        # Spherical Default
+        # self.dir = np.array([np.cos(az)*np.sin(zen),
+        #                      np.sin(az)*np.sin(zen),
+        #                      np.cos(zen)])
+
+class rockMuonTrack:
+    def __init__(self):
+        self.throw_pos_dir()
+        # if the track is not poniting inwards, try again
+        while np.dot(norm(self.pos - detector_parameters['detector center']), self.dir) > 0:
+            self.throw_pos_dir()
+
+        self.track = muonTrack(self.pos, self.dir, self.Ei)
+
+    def throw_pos_dir(self):
+        self.pos = sample_from_face()
+        self.Ei, zen, az = sample_from_beam_spectrum()
+
+        # z beam, y zenith, x drift
+        self.dir = np.array(
+            [np.sin(az)*np.sin(zen), np.cos(zen), np.cos(az)*np.sin(zen)])
+
+        # Spherical Default
+        # self.dir = np.array([np.cos(az)*np.sin(zen),
+        #                      np.sin(az)*np.sin(zen),
+        #                      np.cos(zen)])
+
+
 
 if __name__ == '__main__':
     import argparse
@@ -378,7 +427,7 @@ if __name__ == '__main__':
                         default=30,
                         help='nominal distance from cathode to anode')
     parser.add_argument('-g', '--generator', type=str,
-                        default='muon',
+                        default='cosmic',
                         help='the generator to use for building charge clouds')
     parser.add_argument('-d', '--drift', type=str,
                         default='randomWalk',
@@ -416,8 +465,17 @@ if __name__ == '__main__':
         charges = [thisTracklet.generate_charge()
                    for i in range(nChargeBundles)]
 
-    elif args.generator == 'muon':
-        thisTrack = cosmicRayTrack()
+    elif args.generator == 'cosmic':
+        thisTrack = cosmicRayTrack().track
+        theseTracklets = thisTrack.generate_segments()
+        charges = []
+        for thisTracklet in theseTracklets:
+            nChargeBundles = int(thisTracklet.Qtot/sim_parameters["scalingF"])
+            for i in range(nChargeBundles):
+                charges.append(thisTracklet.generate_charge())
+
+    elif args.generator == 'rock':
+        thisTrack = rockMuonTrack().track
         theseTracklets = thisTrack.generate_segments()
         charges = []
         for thisTracklet in theseTracklets:
