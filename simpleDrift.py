@@ -446,6 +446,7 @@ if __name__ == '__main__':
 
         thisEventRecord.pos = thisTrack.pos
         thisEventRecord.dir = thisTrack.dir
+        thisEventRecord.length = thisTrack.length
         
         theseTracklets = thisTrack.generate_segments()
         charges = []
@@ -459,6 +460,7 @@ if __name__ == '__main__':
 
         thisEventRecord.pos = thisTrack.pos
         thisEventRecord.dir = thisTrack.dir
+        thisEventRecord.length = thisTrack.length
 
         theseTracklets = thisTrack.generate_segments()
         charges = []

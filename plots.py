@@ -69,6 +69,7 @@ if __name__ == '__main__':
     thisRecord = np.load(args.input[0])[0]
 
     x, y, z, t = thisRecord.chargeMap
+    # x, y, z, t = thisRecord.QdepMap
 
     fig = plt.figure()
     # ax = fig.add_subplot(projection = '3d')
@@ -76,6 +77,15 @@ if __name__ == '__main__':
     ax = Axes3D(fig)
     ax.scatter(x, y, z, c=t, s = 1)
     #     ax.scatter(x, y, z, c = t)
+
+    pos = thisRecord.pos
+    dir = thisRecord.dir
+    length = thisRecord.length
+
+    p0 = pos
+    p1 = pos + length*dir
+
+    plt.plot([p0[0], p1[0]], [p0[1], p1[1]], [p0[2], p1[2]], ls = '--', c = 'r')
 
     # target_radius = 0.2
     # tspace = np.linspace(0, 2*np.pi, 1000)
@@ -95,6 +105,12 @@ if __name__ == '__main__':
     ax.set_ylabel(r'Zenith Direciton [cm]',fontsize = 15)
     ax.set_zlabel(r'Beam Direction [cm]',fontsize = 15)
     plt.tick_params(axis='both', which='both', labelsize = 15, direction = 'in')
+
+    bounds = detector_parameters['detector bounds']
+    margin = 2.
+    ax.set_xlim(bounds[0][0] - margin, bounds[0][1] + margin)
+    ax.set_ylim(bounds[1][0] - margin, bounds[1][1] + margin)
+    ax.set_zlim(bounds[2][0] - margin, bounds[2][1] + margin)
 
     plt.show()
 

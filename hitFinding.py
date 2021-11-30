@@ -54,8 +54,6 @@ def form_hits(finalLocs):
                     
     return np.array( H )
 
-
-
         
 if __name__ == '__main__':
     import argparse
