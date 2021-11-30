@@ -152,10 +152,10 @@ physics_parameters = {"DT": 8.8e-6,                          # transverse diffus
                       "lAr density": lArDens}                # density of liquid Argon (@ B.P.),     g/cm^3
 
 
-sim_parameters = {"dt": 10.e-1,                            # time step for integrating the electron's path,        us
+sim_parameters = {"dt": 10.e-1,                           # time step for integrating the electron's path,        us
                   "dx": 1.e-1,                            # spatial discretization for tracks (the dx in dEdx),   cm
-                  "scalingF": 10000,                      # electrons per charge bundle
-                  "generation sphere radius": 25.,        # radius of the sphere on which muons are generated,    cm
+                  "scalingF": 1000,                       # electrons per charge bundle
+                  "generation sphere radius": 25.,      # radius of the sphere on which muons are generated,    cm
                   "generation sphere center": [15, 0, 0], # center of the generation sphere,                      cm
 }
                   

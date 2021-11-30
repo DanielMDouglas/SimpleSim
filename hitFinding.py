@@ -54,8 +54,6 @@ def form_hits(finalLocs):
                     
     return np.array( H )
 
-
-
         
 if __name__ == '__main__':
     import argparse
@@ -69,9 +67,12 @@ if __name__ == '__main__':
                         help='where to save')
     args = parser.parse_args()
     outFile = args.output
-    finalLocs = np.load(args.input)
-
+    oldRecord = np.load(args.input)[0]
+    finalLocs = oldRecord.chargeMap
+  
     H = form_hits(finalLocs) # Pixels are in the y,z plane
     # Beam z, Zenith y, x drift
 
-    np.save(outFile, H)
+    newRecord = oldRecord
+    newRecord.hitMap = H
+    np.save(outFile, np.array([newRecord]))
