@@ -305,10 +305,9 @@ class cosmicRayTrack:
         self.throw_pos_dir()
         while np.dot(norm(self.pos - detector_parameters['detector center']), self.dir) > 0:
             self.throw_pos_dir()
-        print(self.pos)
-        print(self.dir)
-        print(
-            np.dot(norm(self.pos - detector_parameters['detector center']), self.dir))
+        # print(self.pos)
+        # print(self.dir)
+        # print( np.dot(norm(self.pos - detector_parameters['detector center']), self.dir) )
 
         # track length [cm]
         self.length = physics_parameters["mu-Ar range"](self.Ei)
@@ -323,12 +322,12 @@ class cosmicRayTrack:
         self.dQdx = self.dEdx*physics_parameters["R"]/physics_parameters["w"]
 
     def throw_pos_dir(self):
-        self.pos = sample_from_bounding_sphere()
-        self.Ei, zen = sample_from_CR_spectrum()
-        az = 2*np.pi*st.uniform.rvs()
+        # self.pos = sample_from_bounding_sphere()
+        # self.Ei, zen = sample_from_CR_spectrum()
+        # az = 2*np.pi*st.uniform.rvs()
 
-        # self.pos = sample_from_face()
-        # self.Ei, zen, az = sample_from_beam_spectrum()
+        self.pos = sample_from_face()
+        self.Ei, zen, az = sample_from_beam_spectrum()
 
         # z beam, y zenith, x drift
         self.dir = np.array(
