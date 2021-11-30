@@ -5,7 +5,7 @@ import sys
 
 from utils import *
 from parameters import *
-
+from eventRecord import *
 
 def sample_diffused_pdf(v):
     """
@@ -300,32 +300,79 @@ class tracklet:
         return charge(thisPos)
 
 
-class cosmicRayTrack:
-    def __init__(self):
-        self.throw_pos_dir()
-        while np.dot(norm(self.pos - detector_parameters['detector center']), self.dir) > 0:
-            self.throw_pos_dir()
-        # print(self.pos)
-        # print(self.dir)
-        # print( np.dot(norm(self.pos - detector_parameters['detector center']), self.dir) )
+class muonTrack:
+    def __init__(self, pos, dir, Ei):
+        self.pos = pos
+        self.dir = dir
+        self.Ei = Ei
+
+        self.segment_length = sim_parameters['dx']
 
         # track length [cm]
         self.length = physics_parameters["mu-Ar range"](self.Ei)
 
-        # dEdx = betadEdx(Ei)
-        self.dEdx = self.Ei/self.length  # deposited energy density [MeV/cm]
+        self.dE = [] # deposited energy per segment [MeV]
+        Eseg = self.Ei
+        while Eseg >= 0:
+            dEdx = physics_parameters['mu-Ar dEdx'](Eseg)
+            dE = dEdx*self.segment_length
+            self.dE.append(dE)
+            Eseg -= dE
 
-        # dQdx = recomb(dEdx)
-        # total ionized charge [e]
-        self.Qtot = self.Ei*physics_parameters["R"]/physics_parameters["w"]
-        # ioniization density [e/cm]
-        self.dQdx = self.dEdx*physics_parameters["R"]/physics_parameters["w"]
+    def generate_segments(self):
+        """
+        from the track shape defined in the initializer, generate a charge
+        """
+
+        nSegments = int(self.length/self.segment_length)
+
+        trackletList = []
+
+        for i, dE in enumerate(self.dE):
+            pos = self.pos + self.dir*i*self.segment_length
+            dir = self.dir
+            edep = 1
+
+            trackletList.append(tracklet(pos, dir, dE, self.segment_length))
+
+        return trackletList
+
+class cosmicRayTrack:
+    def __init__(self):
+        self.throw_pos_dir()
+        # if the track is not poniting inwards, try again
+        while np.dot(norm(self.pos - detector_parameters['detector center']), self.dir) > 0:
+            self.throw_pos_dir()
+        
+        self.track = muonTrack(self.pos, self.dir, self.Ei)
 
     def throw_pos_dir(self):
-        # self.pos = sample_from_bounding_sphere()
-        # self.Ei, zen = sample_from_CR_spectrum()
-        # az = 2*np.pi*st.uniform.rvs()
+        self.pos = sample_from_bounding_sphere()
+        self.Ei, zen = sample_from_CR_spectrum()
+        az = 2*np.pi*st.uniform.rvs()
 
+        # self.pos = sample_from_face()
+        # self.Ei, zen, az = sample_from_beam_spectrum()
+
+        # z beam, y zenith, x drift
+        self.dir = np.array(
+            [np.sin(az)*np.sin(zen), np.cos(zen), np.cos(az)*np.sin(zen)])
+
+        # Spherical Default
+        # self.dir = np.array([np.cos(az)*np.sin(zen),
+        #                      np.sin(az)*np.sin(zen),
+        #                      np.cos(zen)])
+
+class rockMuonTrack:
+    def __init__(self):
+        self.throw_pos_dir()
+        # if the track is not poniting inwards, try again
+        while np.dot(norm(self.pos - detector_parameters['detector center']), self.dir) > 0:
+            self.throw_pos_dir()
+
+        self.track = muonTrack(self.pos, self.dir, self.Ei)
+
+    def throw_pos_dir(self):
         self.pos = sample_from_face()
         self.Ei, zen, az = sample_from_beam_spectrum()
 
@@ -338,24 +385,6 @@ class cosmicRayTrack:
         #                      np.sin(az)*np.sin(zen),
         #                      np.cos(zen)])
 
-    def generate_segments(self):
-        """
-        from the track shape defined in the initializer, generate a charge
-        """
-
-        segment_length = sim_parameters['dx']
-        nSegments = int(self.length/segment_length)
-
-        trackletList = []
-
-        for i in range(nSegments):
-            pos = self.pos + self.dir*i*segment_length
-            dir = self.dir
-            edep = 1
-
-            trackletList.append(tracklet(pos, dir, edep, segment_length))
-
-        return trackletList
 
 
 if __name__ == '__main__':
@@ -378,7 +407,7 @@ if __name__ == '__main__':
                         default=30,
                         help='nominal distance from cathode to anode')
     parser.add_argument('-g', '--generator', type=str,
-                        default='muon',
+                        default='cosmic',
                         help='the generator to use for building charge clouds')
     parser.add_argument('-d', '--drift', type=str,
                         default='randomWalk',
@@ -392,13 +421,9 @@ if __name__ == '__main__':
 
     thisEfield = Efield(args.transverse, args.longitudinal)
 
-    # Npe = int(st.norm.rvs(loc = physics_parameters["npe"],
-    #                       scale = physics_parameters["npe_sigma"]))
-
-    # print (Npe)
-
-    # Npe = 5000
     Npe = args.N
+
+    thisEventRecord = eventRecord()
 
     arrivalTimes = []
     finalXs = []
@@ -416,8 +441,27 @@ if __name__ == '__main__':
         charges = [thisTracklet.generate_charge()
                    for i in range(nChargeBundles)]
 
-    elif args.generator == 'muon':
-        thisTrack = cosmicRayTrack()
+    elif args.generator == 'cosmic':
+        thisTrack = cosmicRayTrack().track
+
+        thisEventRecord.pos = thisTrack.pos
+        thisEventRecord.dir = thisTrack.dir
+        thisEventRecord.length = thisTrack.length
+        
+        theseTracklets = thisTrack.generate_segments()
+        charges = []
+        for thisTracklet in theseTracklets:
+            nChargeBundles = int(thisTracklet.Qtot/sim_parameters["scalingF"])
+            for i in range(nChargeBundles):
+                charges.append(thisTracklet.generate_charge())
+
+    elif args.generator == 'rock':
+        thisTrack = rockMuonTrack().track
+
+        thisEventRecord.pos = thisTrack.pos
+        thisEventRecord.dir = thisTrack.dir
+        thisEventRecord.length = thisTrack.length
+
         theseTracklets = thisTrack.generate_segments()
         charges = []
         for thisTracklet in theseTracklets:
@@ -443,11 +487,8 @@ if __name__ == '__main__':
         print("drifting " + str(nChargeBundles) + " discrete charge bundles")
     for i, this_charge in enumerate(charges):
 
-        if args.verbose:
-            print("charge " + str(i) + " originates at " + str(this_charge.pos))
-
-        # starting_position = sample_from_cathode_target(z0 = args.z0)
-        # this_charge = charge(starting_position)
+        # if args.verbose:
+        #     print("charge " + str(i) + " originates at " + str(this_charge.pos))
 
         this_charge.drift(thisEfield, args.drift)
 
@@ -463,20 +504,32 @@ if __name__ == '__main__':
             initYs.append(this_charge.pos_i[1])
             initZs.append(this_charge.pos_i[2])
 
-            if args.verbose:
-                print("charge " + str(i) +
-                      " terminates at " + str(this_charge.pos))
+            # if args.verbose:
+            #     print("charge " + str(i) +
+            #           " terminates at " + str(this_charge.pos))
 
-    print(len(arrivalTimes))
+    if args.verbose:
+        print("writing record of " + str(len(arrivalTimes)) + " charges")
 
-    np.save(outFile,
-            np.array([finalXs,
-                      finalYs,
-                      finalZs,
-                      arrivalTimes]))
+    thisEventRecord.chargeMap = np.array([finalXs,
+                                          finalYs,
+                                          finalZs,
+                                          arrivalTimes])
 
-    np.save('driftHits_init.npy',
-            np.array([initXs,
-                      initYs,
-                      initZs,
-                      arrivalTimes]))
+    thisEventRecord.QdepMap = np.array([initXs,
+                                        initYs,
+                                        initZs,
+                                        arrivalTimes])
+    # np.save(outFile,
+    #         np.array([finalXs,
+    #                   finalYs,
+    #                   finalZs,
+    #                   arrivalTimes]))
+
+    # np.save('driftHits_init.npy',
+    #         np.array([initXs,
+    #                   initYs,
+    #                   initZs,
+    #                   arrivalTimes]))
+
+    np.save(outFile, np.array([thisEventRecord]))
