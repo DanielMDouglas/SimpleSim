@@ -16,9 +16,8 @@ if __name__ == '__main__':
                                 help='data to show')
 
         args = parser.parse_args()
-        data = np.load(args.input[0])
-
-        x, y, z, t = data
+        thisRecord = np.load(args.input[0], allow_pickle=True)[0]
+        x, y, z, t = thisRecord.chargeMap
         v = 0.1544 #cm/us for E = 0.5 kV/cm
 
         fig = plt.figure(figsize=(10, 10))

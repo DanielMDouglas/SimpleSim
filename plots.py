@@ -13,7 +13,7 @@ mpl.rc('font', family='SignPainter')
 
 def draw_boundaries(ax):
 #     from parameters import detector_parameters
-    # bounds = [[-15, 15], [0, 30], [-15, 15]]
+#     bounds = [[-15, 15], [0, 30], [-15, 15]]
     bounds = detector_parameters['detector bounds']
 
     ax.plot([bounds[0][0], bounds[0][1]],
@@ -66,7 +66,7 @@ if __name__ == '__main__':
                         help='data to show')
 
     args = parser.parse_args()
-    thisRecord = np.load(args.input[0])[0]
+    thisRecord = np.load(args.input[0], allow_pickle=True)[0]
 
     x, y, z, t = thisRecord.chargeMap
     # x, y, z, t = thisRecord.QdepMap

@@ -140,6 +140,7 @@ def muonArgon_dEdx(E):
 physics_parameters = {"DT": 8.8e-6,                          # transverse diffusion,                 cm * cm / us
                       "DL": 4.0e-6,                          # longitudinal diffusion,               cm * cm / us
                       "v":  drift_model,                     # drift velocity (function),            cm / us
+                      "v_nominal":  0.1544,                  # drift velocity [cm/us] for E = 0.5 kV/cm
                       "lt": 10.e3,                           # lifetime,                             us
                       "npe": 100,                            # number of photoelectrons
                       "npe_sigma": 10,                       # error on number of pe

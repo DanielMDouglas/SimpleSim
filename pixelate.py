@@ -8,7 +8,7 @@ from parameters import *
 from utils import *
 
 # Beam z, Zenith y, x drift
-def form_hits(finalLocs):
+def pixelate(finalLocs): # Need to put the binning params into the params file instead of hard coding. 
     """
     Return array of hits (x center, y center, t) 
     """
@@ -67,10 +67,10 @@ if __name__ == '__main__':
                         help='where to save')
     args = parser.parse_args()
     outFile = args.output
-    oldRecord = np.load(args.input)[0]
+    oldRecord = np.load(args.input, allow_pickle=True)[0]
     finalLocs = oldRecord.chargeMap
   
-    H = form_hits(finalLocs) # Pixels are in the y,z plane
+    H = pixelate(finalLocs) # Pixels are in the y,z plane
     # Beam z, Zenith y, x drift
 
     newRecord = oldRecord

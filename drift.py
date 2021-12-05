@@ -76,8 +76,10 @@ def sample_from_face():
     Return a position from a rectangle near the upstream face 
     """
 
-    x0 = np.random.uniform(0, 30, 1)[0]
-    y0 = np.random.uniform(-15, 15, 1)[0]
+    # Make sampling face larger than actual detector upstream face to ensure 
+    # that some rock muons come in from the sides. 
+    x0 = np.random.uniform(-10, 40, 1)[0] #(0,30) detector bound
+    y0 = np.random.uniform(-25, 25, 1)[0] #(-15,15) detector bound
     z0 = -15.1  # 0.1 cm behind the upstream face (located at -15 cm)
 
     return np.array([x0, y0, z0])
@@ -511,25 +513,19 @@ if __name__ == '__main__':
     if args.verbose:
         print("writing record of " + str(len(arrivalTimes)) + " charges")
 
+    n_charges = len(arrivalTimes)
+
+    if n_charges > 0: #Check if the muon sliced through the volume 
+        thisEventRecord.inside = True
+
     thisEventRecord.chargeMap = np.array([finalXs,
-                                          finalYs,
-                                          finalZs,
-                                          arrivalTimes])
+                                        finalYs,
+                                        finalZs,
+                                        arrivalTimes])
 
     thisEventRecord.QdepMap = np.array([initXs,
                                         initYs,
                                         initZs,
                                         arrivalTimes])
-    # np.save(outFile,
-    #         np.array([finalXs,
-    #                   finalYs,
-    #                   finalZs,
-    #                   arrivalTimes]))
-
-    # np.save('driftHits_init.npy',
-    #         np.array([initXs,
-    #                   initYs,
-    #                   initZs,
-    #                   arrivalTimes]))
 
     np.save(outFile, np.array([thisEventRecord]))
