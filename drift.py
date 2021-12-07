@@ -319,10 +319,11 @@ class muonTrack:
         return trackletList
 
 class cosmicRayTrack:
-    def __init__(self):
+    def __init__(self, condition):
         self.throw_pos_dir()
         # if the track is not poniting inwards, try again
-        while np.dot(norm(self.pos - detector_parameters['detector center']), self.dir) > 0:
+        # while np.dot(norm(self.pos - detector_parameters['detector center']), self.dir) > 0:
+        while not condition(self):
             self.throw_pos_dir()
         
         self.track = muonTrack(self.pos, self.dir, self.Ei)
@@ -337,10 +338,10 @@ class cosmicRayTrack:
                              np.cos(zen),
                              np.cos(az)*np.sin(zen)])
 class rockMuonTrack:
-    def __init__(self):
+    def __init__(self, condition):
         self.throw_pos_dir()
         # if the track is not poniting inwards, try again
-        while np.dot(norm(self.pos - detector_parameters['detector center']), self.dir) > 0:
+        while not condition(self):
             self.throw_pos_dir()
 
         self.track = muonTrack(self.pos, self.dir, self.Ei)
@@ -355,10 +356,10 @@ class rockMuonTrack:
                              np.cos(az)*np.sin(zen)])
 
 class isotropicMuonTrack:
-    def __init__(self):
+    def __init__(self, condition):
         self.throw_pos_dir()
         # if the track is not poniting inwards, try again
-        while np.dot(norm(self.pos - detector_parameters['detector center']), self.dir) > 0:
+        while not condition(self):
             self.throw_pos_dir()
 
         self.track = muonTrack(self.pos, self.dir, self.Ei)
@@ -414,6 +415,8 @@ if __name__ == '__main__':
 
     thisEventRecord = eventRecord()
 
+    trackConditions = lambda thisTrack: np.dot(norm(thisTrack.pos - detector_parameters['detector center']), thisTrack.dir) < 0
+
     arrivalTimes = []
     finalXs = []
     finalYs = []
@@ -431,7 +434,7 @@ if __name__ == '__main__':
                    for i in range(nChargeBundles)]
 
     elif args.generator == 'cosmic':
-        thisTrack = cosmicRayTrack().track
+        thisTrack = cosmicRayTrack(trackConditions).track
 
         thisEventRecord.pos = thisTrack.pos
         thisEventRecord.dir = thisTrack.dir
@@ -446,7 +449,7 @@ if __name__ == '__main__':
         nChargeBundles = len(charges)
                 
     elif args.generator == 'rock':
-        thisTrack = rockMuonTrack().track
+        thisTrack = rockMuonTrack(trackConditions).track
 
         thisEventRecord.pos = thisTrack.pos
         thisEventRecord.dir = thisTrack.dir
@@ -461,7 +464,7 @@ if __name__ == '__main__':
         nChargeBundles = len(charges)
 
     elif args.generator == 'iso':
-        thisTrack = rockMuonTrack().track
+        thisTrack = rockMuonTrack(trackConditions).track
 
         thisEventRecord.pos = thisTrack.pos
         thisEventRecord.dir = thisTrack.dir
