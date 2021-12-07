@@ -84,27 +84,6 @@ def sample_from_face():
 
     return np.array([x0, y0, z0])
 
-# def sample_from_bounding_sphere(zenith):
-#     """
-#     return a random position on a sphere that
-#     """
-#     az = 2*np.pi*st.uniform.rvs() # the distribution of azimuthal angles is flat
-#     r = sim_parameters["generation sphere radius"]
-#     center = sim_parameters["generation sphere center"]
-
-#     # Beam z, Zenith y, x drift
-#     x = r*np.sin(az)*np.sin(zenith)
-#     y = r*np.cos(zenith)
-#     z = r*np.cos(az)*np.sin(zenith)
-
-#     # Standard spherical coords
-#     # x = r*np.cos(az)*np.sin(pol)
-#     # y = r*np.sin(az)*np.sin(pol)
-#     # z = r*np.cos(pol)
-
-#     return np.array([x, y, z]) + center
-
-
 def sample_from_bounding_sphere():
     """
     return a random position on a sphere that 
@@ -353,18 +332,10 @@ class cosmicRayTrack:
         self.Ei, zen = sample_from_CR_spectrum()
         az = 2*np.pi*st.uniform.rvs()
 
-        # self.pos = sample_from_face()
-        # self.Ei, zen, az = sample_from_beam_spectrum()
-
         # z beam, y zenith, x drift
-        self.dir = np.array(
-            [np.sin(az)*np.sin(zen), np.cos(zen), np.cos(az)*np.sin(zen)])
-
-        # Spherical Default
-        # self.dir = np.array([np.cos(az)*np.sin(zen),
-        #                      np.sin(az)*np.sin(zen),
-        #                      np.cos(zen)])
-
+        self.dir = np.array([np.sin(az)*np.sin(zen),
+                             np.cos(zen),
+                             np.cos(az)*np.sin(zen)])
 class rockMuonTrack:
     def __init__(self):
         self.throw_pos_dir()
@@ -379,14 +350,30 @@ class rockMuonTrack:
         self.Ei, zen, az = sample_from_beam_spectrum()
 
         # z beam, y zenith, x drift
-        self.dir = np.array(
-            [np.sin(az)*np.sin(zen), np.cos(zen), np.cos(az)*np.sin(zen)])
+        self.dir = np.array([np.sin(az)*np.sin(zen),
+                             np.cos(zen),
+                             np.cos(az)*np.sin(zen)])
 
-        # Spherical Default
-        # self.dir = np.array([np.cos(az)*np.sin(zen),
-        #                      np.sin(az)*np.sin(zen),
-        #                      np.cos(zen)])
+class isotropicMuonTrack:
+    def __init__(self):
+        self.throw_pos_dir()
+        # if the track is not poniting inwards, try again
+        while np.dot(norm(self.pos - detector_parameters['detector center']), self.dir) > 0:
+            self.throw_pos_dir()
 
+        self.track = muonTrack(self.pos, self.dir, self.Ei)
+
+    def throw_pos_dir(self):
+        self.pos = sample_from_bounding_sphere()
+        self.Ei = 10
+
+        az = 2*np.pi*st.uniform.rvs() 
+        zen = np.arccos(1 - 2*st.uniform.rvs())
+
+        # z beam, y zenith, x drift
+        self.dir = np.array([np.sin(az)*np.sin(zen),
+                             np.cos(zen),
+                             np.cos(az)*np.sin(zen)])
 
 
 if __name__ == '__main__':
@@ -456,7 +443,8 @@ if __name__ == '__main__':
             nChargeBundles = int(thisTracklet.Qtot/sim_parameters["scalingF"])
             for i in range(nChargeBundles):
                 charges.append(thisTracklet.generate_charge())
-
+        nChargeBundles = len(charges)
+                
     elif args.generator == 'rock':
         thisTrack = rockMuonTrack().track
 
@@ -470,7 +458,23 @@ if __name__ == '__main__':
             nChargeBundles = int(thisTracklet.Qtot/sim_parameters["scalingF"])
             for i in range(nChargeBundles):
                 charges.append(thisTracklet.generate_charge())
+        nChargeBundles = len(charges)
 
+    elif args.generator == 'iso':
+        thisTrack = rockMuonTrack().track
+
+        thisEventRecord.pos = thisTrack.pos
+        thisEventRecord.dir = thisTrack.dir
+        thisEventRecord.length = thisTrack.length
+
+        theseTracklets = thisTrack.generate_segments()
+        charges = []
+        for thisTracklet in theseTracklets:
+            nChargeBundles = int(thisTracklet.Qtot/sim_parameters["scalingF"])
+            for i in range(nChargeBundles):
+                charges.append(thisTracklet.generate_charge())
+        nChargeBundles = len(charges)
+                
     elif args.generator == 'point':
         nChargeBundles = args.N
         charges = [charge([0, 0, detector_parameters["cathode position"]])
