@@ -35,24 +35,35 @@ def is_in_tpc(pos):
 
     return is_in_x_bounds and is_in_y_bounds and is_in_z_bounds
 
-def is_anode_crosser(pos, direc):
+def is_inwards(thisTrack):
+    """
+    Check to see that the track is pointing towards the 
+    detector center
+    """
+    from parameters import detector_parameters
+
+    return np.dot(norm(thisTrack.pos - detector_parameters['detector center']), thisTrack.dir) < 0
+
+def is_anode_crosser(thisTrack):
     """
     Check to see if a given track (in slope-intercept form)
     will cross the anode detector boundary defined in `parameters.py`
     (this boundary is the one on the low side of the x-axis)
     """
 
+    pos, direc = thisTrack.pos, thisTrack.dir
+
     from parameters import detector_parameters
     
     bounds = detector_parameters['detector bounds']
 
     # find the extent along the track where the track crosses the anod plane
-    extent = (pos[0] - bounds[0][0])/direc[0]
+    extent = (bounds[0][0] - pos[0])/direc[0]
 
     # and the coordinates in y, z at that point
     yInt = (pos + extent*direc)[1]
     zInt = (pos + extent*direc)[2]
-    
+
     # are those points on the detector face?
     if yInt > bounds[1][0] and yInt < bounds[1][1]:
         if zInt > bounds[2][0] and zInt < bounds[2][1]:
@@ -60,19 +71,21 @@ def is_anode_crosser(pos, direc):
 
     return False
 
-def is_cathode_crosser(pos, direc):
+def is_cathode_crosser(thisTrack):
     """
     Check to see if a given track (in slope-intercept form)
     will cross the cathode detector boundary defined in `parameters.py`
     (this boundary is the one on the high side of the x-axis)
     """
 
+    pos, direc = thisTrack.pos, thisTrack.dir
+    
     from parameters import detector_parameters
 
     bounds = detector_parameters['detector bounds']
 
     # find the extent along the track where the track crosses the anod plane
-    extent = (pos[0] - bounds[0][1])/direc[0]
+    extent = (bounds[0][1] - pos[0])/direc[0]
 
     # and the coordinates in y, z at that point
     yInt = (pos + extent*direc)[1]

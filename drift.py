@@ -321,8 +321,6 @@ class muonTrack:
 class cosmicRayTrack:
     def __init__(self, condition):
         self.throw_pos_dir()
-        # if the track is not poniting inwards, try again
-        # while np.dot(norm(self.pos - detector_parameters['detector center']), self.dir) > 0:
         while not condition(self):
             self.throw_pos_dir()
         
@@ -340,7 +338,6 @@ class cosmicRayTrack:
 class rockMuonTrack:
     def __init__(self, condition):
         self.throw_pos_dir()
-        # if the track is not poniting inwards, try again
         while not condition(self):
             self.throw_pos_dir()
 
@@ -350,7 +347,6 @@ class rockMuonTrack:
         self.pos = sample_from_face()
         self.Ei, zen, az = sample_from_beam_spectrum()
 
-        # z beam, y zenith, x drift
         self.dir = np.array([np.sin(az)*np.sin(zen),
                              np.cos(zen),
                              np.cos(az)*np.sin(zen)])
@@ -366,7 +362,7 @@ class isotropicMuonTrack:
 
     def throw_pos_dir(self):
         self.pos = sample_from_bounding_sphere()
-        self.Ei = 10
+        self.Ei = 1000
 
         az = 2*np.pi*st.uniform.rvs() 
         zen = np.arccos(1 - 2*st.uniform.rvs())
@@ -415,7 +411,9 @@ if __name__ == '__main__':
 
     thisEventRecord = eventRecord()
 
-    trackConditions = lambda thisTrack: np.dot(norm(thisTrack.pos - detector_parameters['detector center']), thisTrack.dir) < 0
+    trackConditions = lambda thisTrack: is_inwards(thisTrack) & \
+                                        is_anode_crosser(thisTrack) & \
+                                        is_cathode_crosser(thisTrack)
 
     arrivalTimes = []
     finalXs = []
@@ -464,11 +462,19 @@ if __name__ == '__main__':
         nChargeBundles = len(charges)
 
     elif args.generator == 'iso':
-        thisTrack = rockMuonTrack(trackConditions).track
+        trackGenerator = isotropicMuonTrack(trackConditions)
+
+        thisTrack = trackGenerator.track
 
         thisEventRecord.pos = thisTrack.pos
         thisEventRecord.dir = thisTrack.dir
         thisEventRecord.length = thisTrack.length
+
+        print ("pos", trackGenerator.pos)
+        print ("dir", trackGenerator.dir)
+
+        print ("anode crosser?", is_anode_crosser(trackGenerator))
+        print ("cathode crosser?", is_cathode_crosser(trackGenerator))
 
         theseTracklets = thisTrack.generate_segments()
         charges = []

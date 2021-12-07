@@ -78,6 +78,11 @@ if __name__ == '__main__':
     ax.scatter(x, y, z, c=t, s = 1)
     #     ax.scatter(x, y, z, c = t)
 
+    # also plot the deposited charge positions
+    x, y, z, t = thisRecord.QdepMap
+    ax.scatter(x, y, z, c='gray', s = 1, marker = '+')
+
+    
     pos = thisRecord.pos
     dir = thisRecord.dir
     length = thisRecord.length
