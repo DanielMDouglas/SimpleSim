@@ -82,15 +82,15 @@ if __name__ == '__main__':
     x, y, z, t = thisRecord.QdepMap
     ax.scatter(x, y, z, c='gray', s = 1, marker = '+')
 
-    
-    pos = thisRecord.pos
-    dir = thisRecord.dir
-    length = thisRecord.length
+    if thisRecord.pos:
+        pos = thisRecord.pos
+        dir = thisRecord.dir
+        length = thisRecord.length
 
-    p0 = pos
-    p1 = pos + length*dir
-
-    plt.plot([p0[0], p1[0]], [p0[1], p1[1]], [p0[2], p1[2]], ls = '--', c = 'r')
+        p0 = pos
+        p1 = pos + length*dir
+        
+        plt.plot([p0[0], p1[0]], [p0[1], p1[1]], [p0[2], p1[2]], ls = '--', c = 'r')
 
     # target_radius = 0.2
     # tspace = np.linspace(0, 2*np.pi, 1000)

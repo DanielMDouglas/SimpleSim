@@ -29,9 +29,9 @@ def is_in_tpc(pos):
 
     bounds = detector_parameters['detector bounds']
 
-    is_in_x_bounds = (pos[0] > bounds[0][0]) & (pos[0] < bounds[0][1])
-    is_in_y_bounds = (pos[1] > bounds[1][0]) & (pos[1] < bounds[1][1])
-    is_in_z_bounds = (pos[2] > bounds[2][0]) & (pos[2] < bounds[2][1])
+    is_in_x_bounds = (pos[0] >= bounds[0][0]) & (pos[0] <= bounds[0][1])
+    is_in_y_bounds = (pos[1] >= bounds[1][0]) & (pos[1] <= bounds[1][1])
+    is_in_z_bounds = (pos[2] >= bounds[2][0]) & (pos[2] <= bounds[2][1])
 
     return is_in_x_bounds and is_in_y_bounds and is_in_z_bounds
 

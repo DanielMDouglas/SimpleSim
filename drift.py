@@ -35,7 +35,7 @@ def sample_azimuthal_pdf():
     return theta
 
 
-def sample_from_cathode_target():
+def sample_from_cathode_target(yC = None, zC = None):
     """ 
     get a random position on the cathode target (8mm diameter on the cathode plane)
     """
@@ -44,8 +44,14 @@ def sample_from_cathode_target():
 
     rho = np.power(st.uniform.rvs()*np.power(R, 2), 0.5)
     phi = st.uniform.rvs(scale=2*np.pi)
-    z = rho*np.cos(phi)
-    y = rho*np.sin(phi)
+
+    if yC == None:
+        yC = 0
+    if zC == None:
+        zC = 0
+    
+    z = rho*np.cos(phi) + zC
+    y = rho*np.sin(phi) + yC
 
     pos = np.array([x, y, z])
     return pos
@@ -157,7 +163,7 @@ class charge:
     def drift(self, this_E, drift_model='randomWalk'):
         self.history.append(self.pos)
 
-        if not self.is_in_tpc():
+        if not is_in_tpc(self.pos):
             self.fate = 2  # fate == 2 means the electron was generated outside of the tpc volume
 
         # for each timestep, sample the next position from the bulk drift PDF:
@@ -221,17 +227,6 @@ class charge:
 
         else:
             raise ValueError(drift_model + " is not a valid drift model!")
-
-    def is_in_tpc(self):
-        bounds = detector_parameters["detector bounds"]
-        is_in_x_bounds = (self.pos[0] > bounds[0][0]) & (
-            self.pos[0] < bounds[0][1])
-        is_in_y_bounds = (self.pos[1] > bounds[1][0]) & (
-            self.pos[1] < bounds[1][1])
-        is_in_z_bounds = (self.pos[2] > bounds[2][0]) & (
-            self.pos[2] < bounds[2][1])
-
-        return is_in_x_bounds & is_in_y_bounds & is_in_z_bounds
 
 
 class radSource:
@@ -477,12 +472,6 @@ if __name__ == '__main__':
         thisEventRecord.dir = thisTrack.dir
         thisEventRecord.length = thisTrack.length
 
-        print ("pos", trackGenerator.pos)
-        print ("dir", trackGenerator.dir)
-
-        print ("anode crosser?", is_anode_crosser(trackGenerator))
-        print ("cathode crosser?", is_cathode_crosser(trackGenerator))
-
         theseTracklets = thisTrack.generate_segments()
         charges = []
         for thisTracklet in theseTracklets:
@@ -500,6 +489,26 @@ if __name__ == '__main__':
         nChargeBundles = args.N
         charges = [charge(sample_from_cathode_target())
                    for i in range(nChargeBundles)]
+
+    elif args.generator == 'targetArray':
+        nTargetsPerRow = 8
+        nTargetsPerCol = 8
+
+        wallMargin = 3. # cm
+        bounds = detector_parameters['detector bounds']
+        
+        targetY = np.linspace(bounds[1][0] + wallMargin, bounds[1][1] - wallMargin, nTargetsPerRow)
+        targetZ = np.linspace(bounds[2][0] + wallMargin, bounds[1][1] - wallMargin, nTargetsPerCol)
+
+        targetLocs = [(y, z) for y in targetY for z in targetZ]
+        
+        nChargeBundles = args.N
+
+        charges = [charge(sample_from_cathode_target(yC = y, zC = z))
+                   for i in range(nChargeBundles)
+                   for y, z in targetLocs]
+
+        nChargeBundles *= len(targetLocs)
 
     else:
         raise ValueError("the specified generator is not a recognized option!")
