@@ -134,8 +134,15 @@ class Efield:
 
     def value(self, pos):
         # x drift
-        return np.array([detector_parameters['nominal field'] + self.longit, 0., self.transv])
-        # return np.array([self.transv, 0., detector_parameters['nominal field'] + self.longit]) # z drift
+        flatField = np.array([detector_parameters['nominal field'] + self.longit, 0., self.transv])
+
+        # displ = pos - detector_parameters['detector center']
+        # dir = norm(displ)
+        # C = 5.
+        # centerAttractor = C*dir/np.power(mag(displ),2)
+
+        # return flatField + centerAttractor
+        return flatField
 
 
 class charge:
