@@ -140,15 +140,32 @@ class Efield:
 
     def value(self, pos):
         # x drift
+        # flat component
         flatField = np.array([detector_parameters['nominal field'] + self.longit, 0., self.transv])
 
+        # add a perturbation
+
+        # a ball of charge
+        Q = 10.
+        R = 5.
+        c = detector_parameters['detector center']
+        displ = pos - c
+        dist = mag(displ)
+
+        if dist < R:
+            pertField = Q/np.power(R, 3)*displ
+        else:
+            pertField = Q/np.power(dist, 3)*displ
+        
+        
         # displ = pos - detector_parameters['detector center']
         # dir = norm(displ)
-        # C = 5.
+        # C = 5.e-1
         # centerAttractor = C*dir/np.power(mag(displ),2)
 
         # return flatField + centerAttractor
-        return flatField
+        return flatField + pertField
+        # return flatField
 
 
 class charge:
@@ -216,6 +233,7 @@ class charge:
 
                 dl = dx*drift_direction + dz*perp_direction1 + dy*perp_direction2
 
+                print(self.pos)
                 self.pos = self.pos + dl
                 self.history.append(self.pos)
 

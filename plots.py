@@ -82,7 +82,7 @@ if __name__ == '__main__':
     x, y, z, t = thisRecord.QdepMap
     ax.scatter(x, y, z, c='gray', s = 1, marker = '+')
 
-    if thisRecord.pos:
+    if not (thisRecord.pos == []):
         pos = thisRecord.pos
         dir = thisRecord.dir
         length = thisRecord.length
