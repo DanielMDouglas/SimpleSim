@@ -39,9 +39,7 @@ def get_pca( X ): #Expects array of z, y, x
     z2,y2,x2 = p2
     
     # For now only save z,y components (plane projections)
-    return [z1, z2], [y1, y2]
-
-
+    return [z1, z2], [y1, y2], [x1, x2]
 
 
 if __name__ == '__main__':

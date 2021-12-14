@@ -233,7 +233,6 @@ class charge:
 
                 dl = dx*drift_direction + dz*perp_direction1 + dy*perp_direction2
 
-                print(self.pos)
                 self.pos = self.pos + dl
                 self.history.append(self.pos)
 

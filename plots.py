@@ -92,6 +92,16 @@ if __name__ == '__main__':
         
         plt.plot([p0[0], p1[0]], [p0[1], p1[1]], [p0[2], p1[2]], ls = '--', c = 'r')
 
+    if not (thisRecord.pointsPCA == []):
+        (z1, z2), (y1, y2), (x1, x2) = thisRecord.pointsPCA
+        
+        print (x1)
+        
+        p1 = np.array([x1, y1, z1])
+        p2 = np.array([x2, y2, z2])
+        
+        plt.plot([p1[0], p2[0]], [p1[1], p2[1]], [p1[2], p2[2]], ls = '--', c = 'green')
+
     # target_radius = 0.2
     # tspace = np.linspace(0, 2*np.pi, 1000)
     # ax.plot(target_radius*np.cos(tspace), target_radius*np.sin(tspace), 50, color = 'black', ls = '--')
