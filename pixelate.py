@@ -8,12 +8,16 @@ from parameters import *
 from utils import *
 
 # Beam z, Zenith y, x drift
-def pixelate(finalLocs): # Need to put the binning params into the params file instead of hard coding. 
+def pixelate(thisRecord): # Need to put the binning params into the params file instead of hard coding. 
     """
     Return array of hits (x center, y center, t) 
     """
-    x, y, z, t = finalLocs
+    finalLocs = thisRecord.chargeMap
+
+    x, y, z, t = finalLocs    
     sample = np.array([z, y, t]).T
+
+    w = thisRecord.weights
 
     thresh = detector_parameters["pixel threshold"] # e's
     pixelPitch = 0.4434
@@ -32,7 +36,9 @@ def pixelate(finalLocs): # Need to put the binning params into the params file i
     # tBins = np.linspace(290, 330, 41)
     tBinCenters = 0.5*(tBins[:-1] + tBins[1:])
 
-    counts, edges = np.histogramdd(sample, bins = [zBins, yBins, tBins])
+    counts, edges = np.histogramdd(sample,
+                                   bins = [zBins, yBins, tBins],
+                                   weights = w)
 
     H = []
     for i, zCenter in enumerate(zBinCenters):
@@ -68,9 +74,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     outFile = args.output
     oldRecord = np.load(args.input, allow_pickle=True)[0]
-    finalLocs = oldRecord.chargeMap
-  
-    H = pixelate(finalLocs) # Pixels are in the y,z plane
+
+    H = pixelate(oldRecord) # Pixels are in the y,z plane
     # Beam z, Zenith y, x drift
 
     newRecord = oldRecord

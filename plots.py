@@ -82,6 +82,7 @@ if __name__ == '__main__':
     x, y, z, t = thisRecord.QdepMap
     ax.scatter(x, y, z, c='gray', s = 1, marker = '+')
 
+    # plot true track, if it exists in the record
     if not (thisRecord.pos == []):
         pos = thisRecord.pos
         dir = thisRecord.dir
@@ -92,6 +93,13 @@ if __name__ == '__main__':
         
         plt.plot([p0[0], p1[0]], [p0[1], p1[1]], [p0[2], p1[2]], ls = '--', c = 'r')
 
+    # plot the hit map, if it exists in the record
+    if not (thisRecord.hitMap == []):
+        hitX, hitY, hitT, hitQ = thisRecord.hitMap.T
+
+        ax.scatter(0, hitY, hitX, c = hitQ)
+        
+    # plot reconstructed track, if it exists in the record
     if not (thisRecord.pointsPCA == []):
         (z1, z2), (y1, y2), (x1, x2) = thisRecord.pointsPCA
         

@@ -176,6 +176,7 @@ class charge:
         self.fate = None  # is the electron still in play?
         self.history = []
         self.arrivalT = 0
+        self.weight = sim_parameters["scalingF"]
 
     def drift(self, this_E, drift_model='randomWalk'):
         self.history.append(self.pos)
@@ -217,6 +218,8 @@ class charge:
 
                 self.fate = 1
 
+            self.weight *= np.exp(-self.arrivalT/physics_parameters['lt'])
+
         elif drift_model == 'randomWalk':
             while self.fate == None:
                 localEfield = this_E.value(self.pos)
@@ -241,6 +244,7 @@ class charge:
                 # check for the particle to finish
                 if self.pos[0] <= 0:
                     self.fate = 1  # fate == 1 means the electron made it to the anode
+                    self.weight *= np.exp(-self.arrivalT/physics_parameters['lt'])
 
         else:
             raise ValueError(drift_model + " is not a valid drift model!")
@@ -443,6 +447,8 @@ if __name__ == '__main__':
     initYs = []
     initZs = []
 
+    weights = []
+
     if args.generator == 'radSource':
         thisSource = radSource()
         thisTracklet = thisSource.generate_tracklet()
@@ -552,6 +558,8 @@ if __name__ == '__main__':
             initYs.append(this_charge.pos_i[1])
             initZs.append(this_charge.pos_i[2])
 
+            weights.append(this_charge.weight)
+
             # if args.verbose:
             #     print("charge " + str(i) +
             #           " terminates at " + str(this_charge.pos))
@@ -573,5 +581,7 @@ if __name__ == '__main__':
                                         initYs,
                                         initZs,
                                         arrivalTimes])
+
+    thisEventRecord.weights = weights
 
     np.save(outFile, np.array([thisEventRecord]))

@@ -164,8 +164,8 @@ detector_parameters = {"cathode position": 30,          # distance from cathode 
                        "target radius": 0.2,            # radius of the cathode target,       cm
                        "noise level": 200,              # ENC (electrons)
                        "nominal field": 0.5,            # nominal field strength,             kV / cm
-                       "pixel threshold": 4,            # threshold for pixel hit ,           # 100 x e-
-                       "detector bounds": [[0, 30],   # min and max extent in x, y, z,      cm
+                       "pixel threshold": 400,          # threshold for pixel hit ,           e
+                       "detector bounds": [[0, 30],     # min and max extent in x, y, z,      cm
                                            [-15, 15],
                                            [-15, 15]],
                        "detector center": [15, 0, 0],   # center of tpc volume,               cm

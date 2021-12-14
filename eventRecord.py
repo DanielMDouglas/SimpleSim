@@ -12,6 +12,8 @@ class eventRecord:
         self.qDepMap = []
         self.chargeMap = []
 
+        self.weights = []
+
         self.hitMap = []
 
         self.pointsPCA = [] #Don't need this for Cathode-Anode Crossers
