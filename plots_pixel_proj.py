@@ -5,6 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 from utils import *
 from parameters import *
+from eventRecord import *
 v = physics_parameters["v_nominal"] #drift velocity 
 
 # Pretty fonts for figures 
@@ -23,14 +24,19 @@ if __name__ == '__main__':
         import argparse
         parser = argparse.ArgumentParser()
 
+        # parser.add_argument('input', 
+        #                         type=str,
+        #                         help='data to show')
+
         parser.add_argument('input', nargs='+',
-                                type=str,
-                                help='data to show')
+                        type=str,
+                        help='data to show')
 
         args = parser.parse_args()
-        thisRecord = np.load(args.input[0], allow_pickle=True)[0]
+        print( args.input[0] )
+        thisRecord = np.load(args.input[0], allow_pickle=True, encoding = 'latin1')[0]
         pixels = thisRecord.hitMap
-        zs,ys = thisRecord.pointsPCA # zs,ys
+        # zs,ys = thisRecord.pointsPCA # zs,ys
 
         z, y, t, q = pixels.T
 
@@ -44,7 +50,7 @@ if __name__ == '__main__':
         plt.scatter(z, y, c = v*t, s = 10, cmap='viridis', marker='s')
 
         #Plot PCA with dotted black line 
-        plt.plot(zs,ys, c = 'black', linestyle = 'dashed', linewidth = 2)
+        # plt.plot(zs,ys, c = 'black', linestyle = 'dashed', linewidth = 2)
 
         cbar= plt.colorbar()
         cbar.set_label("Drift Direction [cm]",fontsize = 20)

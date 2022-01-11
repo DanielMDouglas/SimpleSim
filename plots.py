@@ -66,16 +66,16 @@ if __name__ == '__main__':
                         help='data to show')
 
     args = parser.parse_args()
-    thisRecord = np.load(args.input[0], allow_pickle=True)[0]
+    thisRecord = np.load(args.input[0], allow_pickle=True, encoding = 'latin1')[0]
 
-    x, y, z, t = thisRecord.chargeMap
+#     x, y, z, t = thisRecord.chargeMap
     # x, y, z, t = thisRecord.QdepMap
 
     fig = plt.figure()
     # ax = fig.add_subplot(projection = '3d')
 
     ax = Axes3D(fig)
-    ax.scatter(x, y, z, c=t, s = 1)
+#     ax.scatter(x, y, z, c=t, s = 1)
     #     ax.scatter(x, y, z, c = t)
 
     # also plot the deposited charge positions
@@ -83,32 +83,33 @@ if __name__ == '__main__':
     ax.scatter(x, y, z, c='gray', s = 1, marker = '+')
 
     # plot true track, if it exists in the record
-    if not (thisRecord.pos == []):
-        pos = thisRecord.pos
-        dir = thisRecord.dir
-        length = thisRecord.length
+#     if not (thisRecord.pos == []):
+#         pos = thisRecord.pos
+#         dir = thisRecord.dir
+#         length = thisRecord.length
 
-        p0 = pos
-        p1 = pos + length*dir
+#         p0 = pos
+#         p1 = pos + length*dir
         
-        plt.plot([p0[0], p1[0]], [p0[1], p1[1]], [p0[2], p1[2]], ls = '--', c = 'r')
+#         plt.plot([p0[0], p1[0]], [p0[1], p1[1]], [p0[2], p1[2]], ls = '--', c = 'r')
 
     # plot the hit map, if it exists in the record
     if not (thisRecord.hitMap == []):
-        hitX, hitY, hitT, hitQ = thisRecord.hitMap.T
+        # hitX, hitY, hitT, hitQ = thisRecord.hitMap.T
+        hitZ, hitY, hitT, hitQ = thisRecord.hitMap.T
 
-        ax.scatter(0, hitY, hitX, c = hitQ)
+        ax.scatter(0, hitZ, hitY, c = hitT)
         
     # plot reconstructed track, if it exists in the record
-    if not (thisRecord.pointsPCA == []):
-        (z1, z2), (y1, y2), (x1, x2) = thisRecord.pointsPCA
+#     if not (thisRecord.pointsPCA == []):
+#         (z1, z2), (y1, y2), (x1, x2) = thisRecord.pointsPCA
         
-        print (x1)
+#         print (x1)
         
-        p1 = np.array([x1, y1, z1])
-        p2 = np.array([x2, y2, z2])
+#         p1 = np.array([x1, y1, z1])
+#         p2 = np.array([x2, y2, z2])
         
-        plt.plot([p1[0], p2[0]], [p1[1], p2[1]], [p1[2], p2[2]], ls = '--', c = 'green')
+#         plt.plot([p1[0], p2[0]], [p1[1], p2[1]], [p1[2], p2[2]], ls = '--', c = 'green')
 
     # target_radius = 0.2
     # tspace = np.linspace(0, 2*np.pi, 1000)
