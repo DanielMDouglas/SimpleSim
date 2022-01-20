@@ -80,7 +80,10 @@ if __name__ == '__main__':
 
     # also plot the deposited charge positions
     x, y, z, t = thisRecord.QdepMap
-    ax.scatter(x, y, z, c='gray', s = 1, marker = '+')
+#     ax.scatter(x, y, z, c='gray', s = 2, marker = 'o')
+    # Looks like some samples have z and y switched.
+    # Double check whenever plotting. 
+    ax.scatter(x, z, y, c=t, s = 2, marker = 'o') 
 
     # plot true track, if it exists in the record
 #     if not (thisRecord.pos == []):
@@ -95,21 +98,19 @@ if __name__ == '__main__':
 
     # plot the hit map, if it exists in the record
     if not (thisRecord.hitMap == []):
-        # hitX, hitY, hitT, hitQ = thisRecord.hitMap.T
         hitZ, hitY, hitT, hitQ = thisRecord.hitMap.T
-
         ax.scatter(0, hitZ, hitY, c = hitT)
-        
+
     # plot reconstructed track, if it exists in the record
-#     if not (thisRecord.pointsPCA == []):
-#         (z1, z2), (y1, y2), (x1, x2) = thisRecord.pointsPCA
-        
-#         print (x1)
-        
-#         p1 = np.array([x1, y1, z1])
-#         p2 = np.array([x2, y2, z2])
-        
-#         plt.plot([p1[0], p2[0]], [p1[1], p2[1]], [p1[2], p2[2]], ls = '--', c = 'green')
+    if not (thisRecord.pointsPCA == []):
+        zs, ys, xs = thisRecord.pointsPCA
+        plt.plot(xs,zs, ys, c = 'blue', linestyle = 'solid', linewidth = 2)
+
+        # [z1, z2], [y1, y2], [x1, x2] = thisRecord.pointsPCA
+                
+        # p1 = np.array([x1, y1, z1])
+        # p2 = np.array([x2, y2, z2])
+        # plt.plot([p1[0], p2[0]], [p1[1], p2[1]], [p1[2], p2[2]], ls = '--', c = 'green')
 
     # target_radius = 0.2
     # tspace = np.linspace(0, 2*np.pi, 1000)

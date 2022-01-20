@@ -7,7 +7,7 @@ import sys
 from parameters import *
 v = physics_parameters["v_nominal"] #drift velocity 
 
-# Will not use this for Cathode-Anode crossers. There, just get direction with two points. 
+# For true Cathode-Anode crossers just get direction with two points. 
 def get_pca( X ): #Expects array of z, y, x
 
     j = 0
@@ -31,14 +31,16 @@ def get_pca( X ): #Expects array of z, y, x
     
     vec = eigenvectors[0] #Primary Axis
     L = np.sqrt(eigenvalues[0]) #Using this as a proxy for mid-length (no good reason)
+    # v1, v2 = 20*vec, 20*vec
     v = vec*2*L  #vector from midpoint in direction of PCA
-    p1, p2 = mu - v, mu + v
+    # p1, p2 = mu - v, mu + v
+    p1, p2 = mu - 20*v, mu + v #Can subtract or add an arbitrary ammount (just for visualization)
     
     # Two points along PCA 
     z1,y1,x1 = p1
     z2,y2,x2 = p2
     
-    # For now only save z,y components (plane projections)
+    # The z,y components are the projection
     return [z1, z2], [y1, y2], [x1, x2]
 
 
@@ -58,7 +60,11 @@ if __name__ == '__main__':
         oldRecord = np.load(args.input, allow_pickle=True)[0]
         pixels = oldRecord.hitMap
         z, y, t, q = pixels.T
-        d = np.array([z,y,v*t]).T
+        d = np.array([z,y,v*t]).T #this is unsorted in time (assuming constant drift velocity)
+        d = d[np.argsort(d[:, 2])] #sort rows by 3rd column (the drift coordinate)
+        d = d[0:10, :] # Get the first ten entries closest to the anode
+        # print( d.shape )
+        print( d )
 
         newRecord = oldRecord
         newRecord.pointsPCA = get_pca(d) #Get PCA (two points in z,y defined by principal axis)

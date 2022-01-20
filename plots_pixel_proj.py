@@ -42,6 +42,7 @@ if __name__ == '__main__':
 
         # # Format expected by PCA function 
         # d = np.array([z,y,v*t]).T
+        zs, ys, xs = thisRecord.pointsPCA 
         # zs,ys = get_pca(d) #Get PCA (two points in z,y defined by principal axis)
 
         fig = plt.figure(figsize=(10, 10))
@@ -50,7 +51,7 @@ if __name__ == '__main__':
         plt.scatter(z, y, c = v*t, s = 10, cmap='viridis', marker='s')
 
         #Plot PCA with dotted black line 
-        # plt.plot(zs,ys, c = 'black', linestyle = 'dashed', linewidth = 2)
+        plt.plot(zs,ys, c = 'black', linestyle = 'dashed', linewidth = 2)
 
         cbar= plt.colorbar()
         cbar.set_label("Drift Direction [cm]",fontsize = 20)

@@ -16,4 +16,4 @@ class eventRecord:
 
         self.hitMap = []
 
-        self.pointsPCA = [] #Don't need this for Cathode-Anode Crossers
+        self.pointsPCA = [] 
