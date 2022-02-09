@@ -3,9 +3,18 @@ import scipy.stats as st
 import matplotlib.pyplot as plt
 import sys
 
+import h5py
+from scipy.interpolate import RegularGridInterpolator
+
 from utils import *
 from parameters import *
 from eventRecord import *
+
+def import_hdf5(file):
+    f = h5py.File(file,'r')
+    a_group_key = list(f.keys())[0]
+    d = list(f[a_group_key])
+    return np.array(d)
 
 def sample_diffused_pdf(v):
     """
@@ -132,8 +141,34 @@ def sample_from_beam_spectrum():
 
 
 class Efield:
-    def __init__(self, transv, longit):
-        # TODO load Efield from map, get value from interp
+    def __init__(self, transv, longit, pert_files):
+
+        ex_map, ey_map, ez_map = pert_files
+        # ex_map = 'ex.hdf5'
+        # ey_map = 'ey.hdf5'
+        # ez_map = 'ez.hdf5'
+        f_x = import_hdf5(ex_map)    
+        f_y = import_hdf5(ey_map)
+        f_z = import_hdf5(ez_map)
+
+        #Number of grid points in the map (same for each component of the electric field)
+        nx, ny, nz = f_x.shape
+
+        #Set up the same grid points for the Python interpolator 
+        x_range = detector_parameters['detector bounds'][0]
+        y_range = detector_parameters['detector bounds'][1]
+        z_range = detector_parameters['detector bounds'][2] 
+
+        x = np.linspace(x_range[0], x_range[1], nx)
+        y = np.linspace(y_range[0], y_range[1], ny)
+        z = np.linspace(z_range[0], z_range[1], nz)
+
+        #Interpolate 
+        self.dE_x = RegularGridInterpolator((x, y, z), f_x)
+        self.dE_y = RegularGridInterpolator((x, y, z), f_y)
+        self.dE_z = RegularGridInterpolator((x, y, z), f_z)
+
+
         self.field = None
         self.transv = transv
         self.longit = longit
@@ -141,29 +176,25 @@ class Efield:
     def value(self, pos):
         # x drift
         # flat component
-        flatField = np.array([detector_parameters['nominal field'] + self.longit, 0., self.transv])
+        flatField = np.array( [detector_parameters['nominal field'] + self.longit, 0., self.transv] )
 
         # add a perturbation
 
         # a ball of charge
-        Q = 10.
-        R = 5.
-        c = detector_parameters['detector center']
-        displ = pos - c
-        dist = mag(displ)
+        # Q = 10.
+        # R = 5.
+        # c = detector_parameters['detector center']
+        # displ = pos - c
+        # dist = mag(displ)
 
-        if dist < R:
-            pertField = Q/np.power(R, 3)*displ
-        else:
-            pertField = Q/np.power(dist, 3)*displ
-        
-        
-        # displ = pos - detector_parameters['detector center']
-        # dir = norm(displ)
-        # C = 5.e-1
-        # centerAttractor = C*dir/np.power(mag(displ),2)
+        # if dist < R:
+        #     pertField = Q/np.power(R, 3)*displ
+        # else:
+        #     pertField = Q/np.power(dist, 3)*displ
 
-        # return flatField + centerAttractor
+        #Taken from loaded, interpolated field 
+        pertField = np.array( [self.dE_x(pos), self.dE_y(pos), self.dE_z(pos)] ).flatten()
+        
         return flatField + pertField
         # return flatField
 
@@ -223,6 +254,8 @@ class charge:
         elif drift_model == 'randomWalk':
             while self.fate == None:
                 localEfield = this_E.value(self.pos)
+                # print("Field")
+                # print(localEfield)
 
                 v_drift = physics_parameters["v"](localEfield)
 
@@ -409,6 +442,11 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--longitudinal', type=float,
                         default=0,
                         help='amount of longitudinal (x-direction) drift field to add')
+
+    parser.add_argument('-p', '--pertFields', nargs='+',
+                        default=['ex.hdf5','ey.hdf5','ez.hdf5'],
+                        help='names of 3 files with field perturbations')
+
     parser.add_argument('-N', '--N', type=int,
                         default=int(1e2),
                         help='number of photoelectrons to drift')
@@ -428,7 +466,8 @@ if __name__ == '__main__':
 
     outFile = args.output
 
-    thisEfield = Efield(args.transverse, args.longitudinal)
+    thisEfield = Efield(args.transverse, args.longitudinal, args.pertFields)
+    # thisEfield = Efield(args.transverse, args.longitudinal)
 
     Npe = args.N
 

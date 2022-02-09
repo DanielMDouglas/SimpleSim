@@ -153,7 +153,7 @@ physics_parameters = {"DT": 8.8e-6,                          # transverse diffus
                       "lAr density": lArDens}                # density of liquid Argon (@ B.P.),     g/cm^3
 
 
-sim_parameters = {"dt": 10.e-1,                           # time step for integrating the electron's path,        us
+sim_parameters = {"dt": 10.,                           # time step for integrating the electron's path,        us (default 10.e-1)
                   "dx": 1.e-1,                            # spatial discretization for tracks (the dx in dEdx),   cm
                   "scalingF": 1000,                       # electrons per charge bundle
                   "generation sphere radius": 25.,      # radius of the sphere on which muons are generated,    cm
@@ -170,5 +170,3 @@ detector_parameters = {"cathode position": 30,          # distance from cathode 
                                            [-15, 15]],
                        "detector center": [15, 0, 0],   # center of tpc volume,               cm
 }
-
-#Test test
