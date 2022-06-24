@@ -48,7 +48,8 @@ def sample_from_cathode_target(yC = None, zC = None):
     """ 
     get a random position on the cathode target (8mm diameter on the cathode plane)
     """
-    x = detector_parameters["cathode position"]
+    x = -1.0
+    # x = detector_parameters["cathode position"] 
     R = detector_parameters["target radius"]
 
     rho = np.power(st.uniform.rvs()*np.power(R, 2), 0.5)
@@ -140,63 +141,103 @@ def sample_from_beam_spectrum():
     return 1.e3*E, zen, az
 
 
+
 class Efield:
-    def __init__(self, transv, longit, pert_files):
+    def __init__(self):
 
-        ex_map, ey_map, ez_map = pert_files
-        # ex_map = 'ex.hdf5'
-        # ey_map = 'ey.hdf5'
-        # ez_map = 'ez.hdf5'
-        f_x = import_hdf5(ex_map)    
-        f_y = import_hdf5(ey_map)
-        f_z = import_hdf5(ez_map)
+        f_root_read = TFile(f"yifan/Efield_TH3_raw.root","READ")
+        # f_root_read = TFile(f"Efield_TH3_raw.root","READ")
+        # Define input TH3F's (efield)
+        self.Ex = f_root_read.Get("th3_Ex_raw")
+        self.Ey = f_root_read.Get("th3_Ey_raw")
+        self.Ez = f_root_read.Get("th3_Ez_raw")
 
-        #Number of grid points in the map (same for each component of the electric field)
-        nx, ny, nz = f_x.shape
+        self.Ex.SetDirectory(ROOT.nullptr)
+        self.Ey.SetDirectory(ROOT.nullptr)
+        self.Ez.SetDirectory(ROOT.nullptr)
 
-        #Set up the same grid points for the Python interpolator 
-        x_range = detector_parameters['detector bounds'][0]
-        y_range = detector_parameters['detector bounds'][1]
-        z_range = detector_parameters['detector bounds'][2] 
+        # self.Ex.GetXaxis()
+        # GetNbins()
+        # GetBinLowEdge(n)
+        # GetBinCenter(n)
 
-        x = np.linspace(x_range[0], x_range[1], nx)
-        y = np.linspace(y_range[0], y_range[1], ny)
-        z = np.linspace(z_range[0], z_range[1], nz)
-
-        #Interpolate 
-        self.dE_x = RegularGridInterpolator((x, y, z), f_x)
-        self.dE_y = RegularGridInterpolator((x, y, z), f_y)
-        self.dE_z = RegularGridInterpolator((x, y, z), f_z)
-
-
-        self.field = None
-        self.transv = transv
-        self.longit = longit
+        # print( self.Ex )  
 
     def value(self, pos):
-        # x drift
-        # flat component
-        flatField = np.array( [detector_parameters['nominal field'] + self.longit, 0., self.transv] )
 
-        # add a perturbation
+        #From Dan (John's coord system)
+        #x is [-0.3225, 0.3225], y is [-0.625, 0.625], z is [-0.3, 0.3]
 
-        # a ball of charge
-        # Q = 10.
-        # R = 5.
-        # c = detector_parameters['detector center']
-        # displ = pos - c
-        # dist = mag(displ)
+        x,y,z = pos/100 # Convert cm to m
+        print(x,y,z)
+        # print(self.Ex)
+        # print( self.Ex.Interpolate(x,y,z) )
+        # Calculate at some position (flip z and x between our and John's frameworks)
+        E1 = self.Ex.Interpolate(z,y,x)
+        E2 = self.Ey.Interpolate(z,y,x)
+        E3 = self.Ez.Interpolate(z,y,x)
+        E_v = np.array([E3, E2, E1]) #kV/m
+        E_v = E_v/100
+        # print(E_v)
+        return E_v #in kV/cm
 
-        # if dist < R:
-        #     pertField = Q/np.power(R, 3)*displ
-        # else:
-        #     pertField = Q/np.power(dist, 3)*displ
+# class Efield:
+#     def __init__(self, transv, longit, pert_files):
 
-        #Taken from loaded, interpolated field 
-        pertField = np.array( [self.dE_x(pos), self.dE_y(pos), self.dE_z(pos)] ).flatten()
+#         ex_map, ey_map, ez_map = pert_files
+#         # ex_map = 'ex.hdf5'
+#         # ey_map = 'ey.hdf5'
+#         # ez_map = 'ez.hdf5'
+#         f_x = import_hdf5(ex_map)    
+#         f_y = import_hdf5(ey_map)
+#         f_z = import_hdf5(ez_map)
+
+#         #Number of grid points in the map (same for each component of the electric field)
+#         nx, ny, nz = f_x.shape
+
+#         #Set up the same grid points for the Python interpolator 
+#         x_range = detector_parameters['detector bounds'][0]
+#         y_range = detector_parameters['detector bounds'][1]
+#         z_range = detector_parameters['detector bounds'][2] 
+
+#         x = np.linspace(x_range[0], x_range[1], nx)
+#         y = np.linspace(y_range[0], y_range[1], ny)
+#         z = np.linspace(z_range[0], z_range[1], nz)
+
+#         #Interpolate 
+#         self.dE_x = RegularGridInterpolator((x, y, z), f_x)
+#         self.dE_y = RegularGridInterpolator((x, y, z), f_y)
+#         self.dE_z = RegularGridInterpolator((x, y, z), f_z)
+
+
+#         self.field = None
+#         self.transv = transv
+#         self.longit = longit
+
+#     def value(self, pos):
+#         # x drift
+#         # flat component
+#         flatField = np.array( [detector_parameters['nominal field'] + self.longit, 0., self.transv] )
+
+#         # add a perturbation
+
+#         # a ball of charge
+#         # Q = 10.
+#         # R = 5.
+#         # c = detector_parameters['detector center']
+#         # displ = pos - c
+#         # dist = mag(displ)
+
+#         # if dist < R:
+#         #     pertField = Q/np.power(R, 3)*displ
+#         # else:
+#         #     pertField = Q/np.power(dist, 3)*displ
+
+#         #Taken from loaded, interpolated field 
+#         pertField = np.array( [self.dE_x(pos), self.dE_y(pos), self.dE_z(pos)] ).flatten()
         
-        return flatField + pertField
-        # return flatField
+#         return flatField + pertField
+#         # return flatField
 
 
 class charge:
@@ -259,7 +300,8 @@ class charge:
 
                 v_drift = physics_parameters["v"](localEfield)
 
-                drift_direction = -norm(localEfield)
+                # drift_direction = norm(localEfield) #For John's solution 
+                drift_direction = -norm(localEfield) #For our solution (drift direction opposite)
                 perp_direction1, perp_direction2 = get_perpendicular_vectors(
                     drift_direction)
 
@@ -274,8 +316,9 @@ class charge:
 
                 self.arrivalT += sim_parameters["dt"]
 
-                # check for the particle to finish
-                if self.pos[0] <= 0:
+                # check for the particle drifted to the anode
+                if self.pos[0] <= -29: # For John's solution
+                # if self.pos[0] <= 0: # For our work (we flipped direction of drift)
                     self.fate = 1  # fate == 1 means the electron made it to the anode
                     self.weight *= np.exp(-self.arrivalT/physics_parameters['lt'])
 
@@ -431,30 +474,31 @@ class isotropicMuonTrack:
 
 if __name__ == '__main__':
     import argparse
+    # from ROOT import TFile, TH2F, TH3F, TCanvas, TLegend, gStyle, TGaxis
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-o', '--output', type=str,
                         default='driftHits.npy',
                         help='where to save the destinations')
-    parser.add_argument('-t', '--transverse', type=float,
-                        default=0,
-                        help='amount of transverse (z-direction) drift field to add')
-    parser.add_argument('-l', '--longitudinal', type=float,
-                        default=0,
-                        help='amount of longitudinal (x-direction) drift field to add')
+    # parser.add_argument('-t', '--transverse', type=float,
+    #                     default=0,
+    #                     help='amount of transverse (z-direction) drift field to add')
+    # parser.add_argument('-l', '--longitudinal', type=float,
+    #                     default=0,
+    #                     help='amount of longitudinal (x-direction) drift field to add')
 
-    parser.add_argument('-p', '--pertFields', nargs='+',
-                        default=['ex.hdf5','ey.hdf5','ez.hdf5'],
-                        help='names of 3 files with field perturbations')
+    # parser.add_argument('-p', '--pertFields', nargs='+',
+    #                     default=['ex.hdf5','ey.hdf5','ez.hdf5'],
+    #                     help='names of 3 files with field perturbations')
 
     parser.add_argument('-N', '--N', type=int,
                         default=int(1e2),
                         help='number of photoelectrons to drift')
     parser.add_argument('-z', '--z0', type=float,
-                        default=30,
+                        default=15, #default is 30
                         help='nominal distance from cathode to anode')
     parser.add_argument('-g', '--generator', type=str,
-                        default='cosmic',
+                        default='targetArray', #cosmic
                         help='the generator to use for building charge clouds')
     parser.add_argument('-d', '--drift', type=str,
                         default='randomWalk',
@@ -466,7 +510,8 @@ if __name__ == '__main__':
 
     outFile = args.output
 
-    thisEfield = Efield(args.transverse, args.longitudinal, args.pertFields)
+    thisEfield = Efield()
+    # thisEfield = Efield(args.transverse, args.longitudinal, args.pertFields)
     # thisEfield = Efield(args.transverse, args.longitudinal)
 
     Npe = args.N
@@ -553,14 +598,19 @@ if __name__ == '__main__':
                    for i in range(nChargeBundles)]
 
     elif args.generator == 'targetArray':
+
         nTargetsPerRow = 8
         nTargetsPerCol = 8
 
-        wallMargin = 3. # cm
+        wallMargin = 5. # cm
         bounds = detector_parameters['detector bounds']
         
+        # x is [-0.3225, 0.3225], y is [-0.625, 0.625], z is [-0.3, 0.3] in John's coords. 
+        # We need to switch x and z for our simulation. 
         targetY = np.linspace(bounds[1][0] + wallMargin, bounds[1][1] - wallMargin, nTargetsPerRow)
-        targetZ = np.linspace(bounds[2][0] + wallMargin, bounds[1][1] - wallMargin, nTargetsPerCol)
+        targetZ = np.linspace(bounds[2][0] + wallMargin, bounds[2][1] - wallMargin, nTargetsPerCol)
+        # The x and z coordinates are switched between John's solution and our simulation. 
+        # targetZ = np.linspace(bounds[2][0] + wallMargin, bounds[1][1] - wallMargin, nTargetsPerCol)
 
         targetLocs = [(y, z) for y in targetY for z in targetZ]
         
@@ -624,3 +674,5 @@ if __name__ == '__main__':
     thisEventRecord.weights = weights
 
     np.save(outFile, np.array([thisEventRecord]))
+
+

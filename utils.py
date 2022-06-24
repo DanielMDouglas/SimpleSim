@@ -1,6 +1,10 @@
 import numpy as np
 import scipy.stats as st
 from numpy import linalg as LA
+from array import array
+import ROOT
+from ROOT import TFile, TH2F, TH3F, TCanvas, TLegend, gStyle, TGaxis
+import math
 
 def mag(vect):
     return np.sqrt(np.sum(np.power(vect, 2)))

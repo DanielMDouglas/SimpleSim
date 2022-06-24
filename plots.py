@@ -83,18 +83,24 @@ if __name__ == '__main__':
 #     ax.scatter(x, y, z, c='gray', s = 2, marker = 'o')
     # Looks like some samples have z and y switched.
     # Double check whenever plotting. 
-    ax.scatter(x, z, y, c=t, s = 2, marker = 'o') 
+    ax.scatter(x, y, z, c='gray', s = 2, marker = 'o', alpha = 0.5) 
 
-    # plot true track, if it exists in the record
-#     if not (thisRecord.pos == []):
-#         pos = thisRecord.pos
-#         dir = thisRecord.dir
-#         length = thisRecord.length
+    x, y, z, t = thisRecord.chargeMap
+#     ax.scatter(x, y, z, c='gray', s = 2, marker = 'o')
+    # Looks like some samples have z and y switched.
+    # Double check whenever plotting. 
+    ax.scatter(x, y, z, c=t, s = 2, marker = 'o') 
 
-#         p0 = pos
-#         p1 = pos + length*dir
+    #plot true track, if it exists in the record
+    if not (thisRecord.pos == []):
+        pos = thisRecord.pos
+        dir = thisRecord.dir
+        length = thisRecord.length
+
+        p0 = pos
+        p1 = pos + length*dir
         
-#         plt.plot([p0[0], p1[0]], [p0[1], p1[1]], [p0[2], p1[2]], ls = '--', c = 'r')
+        plt.plot([p0[0], p1[0]], [p0[1], p1[1]], [p0[2], p1[2]], ls = '--', c = 'r')
 
     # plot the hit map, if it exists in the record
     if not (thisRecord.hitMap == []):

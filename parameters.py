@@ -160,13 +160,36 @@ sim_parameters = {"dt": 10.,                           # time step for integrati
                   "generation sphere center": [15, 0, 0], # center of the generation sphere,                      cm
 }
                   
-detector_parameters = {"cathode position": 30,          # distance from cathode to anode,     cm
+# detector_parameters = {"cathode position": 30,          # distance from cathode to anode,     cm
+#                        "target radius": 0.2,            # radius of the cathode target,       cm
+#                        "noise level": 200,              # ENC (electrons)
+#                        "nominal field": 0.5,            # nominal field strength,             kV / cm
+#                        "pixel threshold": 400,          # threshold for pixel hit ,           e
+#                        "detector bounds": [[0, 30],     # min and max extent in x, y, z,      cm
+#                                            [-15, 15],
+#                                            [-15, 15]],
+#                        "detector center": [15, 0, 0],   # center of tpc volume,               cm
+# }
+
+detector_parameters = {"cathode position": 0,           # cm
                        "target radius": 0.2,            # radius of the cathode target,       cm
                        "noise level": 200,              # ENC (electrons)
                        "nominal field": 0.5,            # nominal field strength,             kV / cm
                        "pixel threshold": 400,          # threshold for pixel hit ,           e
-                       "detector bounds": [[0, 30],     # min and max extent in x, y, z,      cm
-                                           [-15, 15],
-                                           [-15, 15]],
+                       "detector bounds": [[-30, 0],     # min and max extent in x, y, z,      cm
+                                           [-62.5, 62.5],
+                                           [-32.25, 32.25]],
                        "detector center": [15, 0, 0],   # center of tpc volume,               cm
 }
+
+        # Our simulation drifts in x instead of z (need to flip John's geometry for x and z)
+        # Also, John simulated a subset with the following coords. 
+        # z coordinate of face of anode and cathode in contact with LAr = 0.1513840 m
+        # x coordinate of face of side panel in contact with LAr = 0.3204718 m
+        # y coordinate of face of top panel in contact with LAr = 0.6309106 m
+
+        #From Yifan
+        #The TPC boundary [mm] in x(-320.4, 320.4), y(-630.9,630.9), z (-304.2, 304.3)
+
+        #From Dan (John's coord system)
+        #x is [-0.3225, 0.3225], y is [-0.625, 0.625], z is [-0.3, 0.3]
